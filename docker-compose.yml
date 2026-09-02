@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nse-picks-postgres
+    environment:
+      POSTGRES_USER: nse
+      POSTGRES_PASSWORD: nse
+      POSTGRES_DB: nse
+    ports:
+      - '5432:5432'
+    volumes:
+      - nse_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nse']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  nse_pg:

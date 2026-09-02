@@ -1,0 +1,22 @@
+{
+  "name": "nse-picks",
+  "private": true,
+  "version": "0.1.0",
+  "description": "NSE daily quantitative stock-selection system: NestJS API + React dashboard",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @nse/shared",
+    "build": "npm run build:shared && npm run build -w api && npm run build -w web",
+    "dev:api": "npm run build:shared && npm run start:dev -w api",
+    "dev:web": "npm run dev -w web",
+    "dev": "npm run build:shared && concurrently -n api,web -c blue,green \"npm run start:dev -w api\" \"npm run dev -w web\"",
+    "test": "npm run test -w api",
+    "cli": "npm run cli -w api --"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

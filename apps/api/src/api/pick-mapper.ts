@@ -1,0 +1,37 @@
+import type { Direction, MarketRegime, PickDto, PredictionOutcome, SetupType } from '@nse/shared';
+import type { PredictionEntity } from '../database/entities/prediction.entity.js';
+
+export function toPickDto(p: PredictionEntity, name: string | null = null): PickDto {
+  return {
+    id: p.id,
+    date: p.date,
+    rank: p.rank,
+    symbol: p.symbol,
+    name,
+    sector: p.sector,
+    score: p.score,
+    confidence: p.confidence,
+    direction: p.direction as Direction,
+    setup: p.setup as SetupType,
+    setupSuccessRate: p.setupSuccessRate,
+    entryLow: p.entryLow,
+    entryHigh: p.entryHigh,
+    entry: p.entry,
+    target: p.target,
+    stopLoss: p.stopLoss,
+    riskReward: p.riskReward,
+    riskPct: p.riskPct,
+    rewardPct: p.rewardPct,
+    holdDays: p.holdDays,
+    reasons: p.reasons ?? [],
+    factors: p.factors ?? [],
+    regime: p.regime as MarketRegime,
+    outcome: p.outcome as PredictionOutcome,
+    outcomeDate: p.outcomeDate,
+    exitPrice: p.exitPrice,
+    grossReturnPct: p.grossReturnPct,
+    netReturnPct: p.netReturnPct,
+    daysHeld: p.daysHeld,
+    isBacktest: p.runId !== null,
+  };
+}
