@@ -9,3 +9,4 @@ data/*.sqlite-*
 data/cache/
 .DS_Store
 Thumbs.db
+*.tsbuildinfo
