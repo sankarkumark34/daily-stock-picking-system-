@@ -61,6 +61,18 @@ Base URL `http://localhost:4000/api` — Swagger at `/docs`.
 
 See `.env.example`. Key knobs: `PORT`, `DB_TYPE`, `DATABASE_URL`, `SQLITE_PATH`, `DAILY_RUN_CRON`, `SCHEDULER_ENABLED`, `MODEL_MIN_SCORE`, `MODEL_MAX_PICKS`, `MODEL_MAX_PER_SECTOR`, `MODEL_MIN_TURNOVER_CR`, `MODEL_MIN_PRICE`.
 
+## Results so far
+
+Full report: [docs/BACKTEST-2026-09-02.md](docs/BACKTEST-2026-09-02.md).
+
+Baseline rule-based model, 2020-01 → 2026-09, ~750 liquid NSE stocks/day, net of costs:
+
+| Picks | Target hit | Stop hit | Expectancy / pick | Profit factor | Avg daily hit rate | Days with 6+ of 10 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 13,952 | 25.3 % | 41.1 % | −0.41 % | 0.85 | 25 % | 42 / 1,442 |
+
+Every year 2020–2026 and every market regime is negative; out-of-sample walk-forward expectancy is −0.43 %. **Verdict: no repeatable edge; the 6–7-of-10 target is not met (the model averages 2–3 of 10).** The system is doing its job — it measures rather than promises. See the report for the diagnosis and the research directions that follow from it.
+
 ## Honesty notes (read before trusting a number)
 
 - **Universe is point-in-time** (every EQ symbol in that day's bhavcopy, filtered by liquidity), so stock selection has no survivorship bias. **Sector mapping** uses the current Nifty 500 list, so sector strength is mildly biased for delisted names — flagged in the UI.

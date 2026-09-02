@@ -86,7 +86,7 @@ export class DailyRunService {
 
     const data = await this.store.load(runDate, runDate);
     const opts = this.defaultOptions();
-    const [analysis] = this.analysis.analyzeDates(data, [runDate], opts);
+    const [analysis] = await this.analysis.analyzeDates(data, [runDate], opts);
     if (!analysis) throw new Error(`Not enough data to analyse ${runDate} (need NIFTY history and ≥20 liquid stocks).`);
     const rates = await this.setupSuccessRates();
     const ranked = this.analysis.rank(analysis, opts, rates);

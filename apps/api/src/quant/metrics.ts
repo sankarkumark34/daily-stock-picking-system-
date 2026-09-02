@@ -74,8 +74,9 @@ export function dailySeries(trades: TradeRecord[], regimeByDate?: Map<string, st
 }
 
 /**
- * Equity curve: start at 100, each filled trade risks 1/maxPicks of the *initial*
- * capital (fixed fractional sizing keeps returns additive and comparable).
+ * Equity curve: start at 100; each pick is sized at 1/maxPicks of *current* equity
+ * (fixed-fraction, compounding). Daily portfolio return = Σ netReturn/maxPicks of
+ * the trades that closed that day.
  */
 export function equityCurve(trades: TradeRecord[], tradingDates: string[], maxPicks: number): EquityPoint[] {
   const pnlByDate = new Map<string, number>();
@@ -87,7 +88,7 @@ export function equityCurve(trades: TradeRecord[], tradingDates: string[], maxPi
   let eq = 100;
   let peak = 100;
   for (const d of tradingDates) {
-    eq += pnlByDate.get(d) ?? 0;
+    eq *= 1 + (pnlByDate.get(d) ?? 0) / 100;
     if (eq > peak) peak = eq;
     out.push({ date: d, equity: Math.round(eq * 100) / 100, drawdownPct: Math.round(((eq / peak - 1) * 100) * 100) / 100 });
   }

@@ -106,7 +106,7 @@ export class BacktestService {
 
       const opts = { ...this.daily.defaultOptions(), maxPicks: p.maxPicks, minScore: p.minScore, holdDays: p.holdDays, maxPerSector: p.maxPerSector, weights: p.weights, costs: p.costs };
       let lastSave = Date.now();
-      const analyses = this.analysis.analyzeDates(data, dates, opts, (done, total) => {
+      const analyses = await this.analysis.analyzeDates(data, dates, opts, (done, total) => {
         run.progress = Math.round((done / total) * 70);
         if (Date.now() - lastSave > 2000) {
           lastSave = Date.now();

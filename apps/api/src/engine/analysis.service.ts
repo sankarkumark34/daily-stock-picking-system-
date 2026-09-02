@@ -62,8 +62,14 @@ const CHUNK_DATES = 120;
 export class AnalysisService {
   private readonly log = new Logger(AnalysisService.name);
 
-  analyzeDates(data: MarketData, dates: string[], opts: AnalyzeOptions, onProgress?: (done: number, total: number) => void): DateAnalysis[] {
+  /**
+   * Async so the event loop is yielded between symbols/dates: a multi-year run
+   * takes minutes of CPU and must not freeze the HTTP server or block progress writes.
+   */
+  async analyzeDates(data: MarketData, dates: string[], opts: AnalyzeOptions, onProgress?: (done: number, total: number) => void): Promise<DateAnalysis[]> {
     const results: DateAnalysis[] = [];
+    const yieldLoop = () => new Promise<void>((r) => setImmediate(r));
+    let sinceYield = 0;
     if (!data.nifty) throw new Error('NIFTY 50 index history is required for regime detection. Ingest index data first.');
     const niftyFeat = computeIndexFeatures(data.nifty);
     const niftyIdx = new Map<string, number>();
@@ -80,6 +86,7 @@ export class AnalysisService {
 
       // Pass 1: per symbol → snapshots for each date in the chunk (only if it passes the universe filter)
       for (const s of data.symbols.values()) {
+        if (++sinceYield % 40 === 0) await yieldLoop();
         if (s.dates.length < opts.minHistoryBars) continue;
         const first = chunk[0];
         const last = chunk[chunk.length - 1];
@@ -98,6 +105,7 @@ export class AnalysisService {
 
       // Pass 2: per date
       for (const date of chunk) {
+        await yieldLoop();
         const snaps = chunkSet.get(date) ?? [];
         const ni = niftyIdx.get(date);
         if (ni === undefined || snaps.length < 20) {
