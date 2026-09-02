@@ -340,9 +340,9 @@ function coordinateSearch(start: FactorWeights, objective: (w: FactorWeights) =>
   for (let iter = 0; iter < maxIter; iter++) {
     let improved = false;
     for (const from of FACTOR_NAMES) {
-      if (best[from] < step) continue;
       for (const to of FACTOR_NAMES) {
         if (from === to) continue;
+        if (best[from] < step) break; // re-check every move: `best` changes inside this loop
         const cand = { ...best, [from]: best[from] - step, [to]: best[to] + step } as FactorWeights;
         const v = objective(cand);
         if (v > bestVal + 1e-6) {
