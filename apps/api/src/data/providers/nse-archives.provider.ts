@@ -96,7 +96,15 @@ export class NseArchivesProvider implements MarketDataProvider {
     const p = this.cachePath(kind, cacheFile);
     const missing = `${p}.missing`;
     if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-    if (fs.existsSync(missing)) return null;
+    if (fs.existsSync(missing)) {
+      // A "missing" marker is only trusted if it was written on a later IST day than
+      // the trading date — otherwise the file may just not have been published yet.
+      const dataDate = cacheFile.replace(/^(\d{4})(\d{2})(\d{2}).*$/, '$1-$2-$3');
+      const writtenAt = new Date(fs.readFileSync(missing, 'utf8').trim() || 0);
+      const writtenIst = Number.isNaN(writtenAt.getTime()) ? '' : new Date(writtenAt.getTime() + 5.5 * 3600_000).toISOString().slice(0, 10);
+      if (writtenIst > dataDate) return null;
+      fs.unlinkSync(missing);
+    }
     const buf = await this.download(url);
     if (!buf) {
       fs.writeFileSync(missing, new Date().toISOString());

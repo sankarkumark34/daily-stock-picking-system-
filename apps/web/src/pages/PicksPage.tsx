@@ -6,7 +6,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Callout, Card, EmptyState, FactorBar, KV, PageHeader, Select, Skeleton, Term, fadeUp, staggerList } from '../components/ui'
-import { useBacktestRuns, usePickDates, usePicks } from '../lib/api'
+import { useBacktestRuns, useLiveQuotes, usePickDates, usePicks } from '../lib/api'
+import { LiveBadge, LiveVsPlan } from '../components/LivePrice'
 import { dateLong, fmt, inr, outcomeLabel, outcomeTone, pct, regimeLabel, regimeTone, scoreTone, setupLabel, setupTone, signTone } from '../lib/format'
 
 export function PicksPage() {
@@ -82,6 +83,10 @@ export function PicksPage() {
 
 export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compact?: boolean }) {
   const [open, setOpen] = useState<number | null>(null)
+  const openSymbols = picks.filter((p) => p.outcome === 'OPEN' && !p.isBacktest).map((p) => p.symbol)
+  const { data: quotes } = useLiveQuotes(openSymbols)
+  const quoteOf = (s: string) => quotes?.find((q) => q.symbol === s)
+  const anyQuote = quotes?.[0]
   return (
     <div className="overflow-x-auto">
       <table className="table-base">
@@ -89,6 +94,13 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
           <tr>
             <th className="w-10">#</th>
             <th>Stock</th>
+            {openSymbols.length > 0 && (
+              <th>
+                <span className="inline-flex items-center gap-1.5">
+                  Live vs plan <LiveBadge q={anyQuote} />
+                </span>
+              </th>
+            )}
             <th><Term k="setup">Setup</Term></th>
             <th className="text-right"><Term k="score">Score</Term></th>
             <th className="text-right"><Term k="confidence">Conf.</Term></th>
@@ -115,6 +127,11 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
                       <span className="max-w-[220px] truncate text-[11px] text-ink-500">{p.name ?? p.sector}</span>
                     </div>
                   </td>
+                  {openSymbols.length > 0 && (
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {p.outcome === 'OPEN' && !p.isBacktest ? <LiveVsPlan q={quoteOf(p.symbol)} entry={p.entry} target={p.target} stopLoss={p.stopLoss} /> : <span className="text-ink-400">–</span>}
+                    </td>
+                  )}
                   <td>
                     <Badge tone={setupTone(p.setup)}>{setupLabel(p.setup)}</Badge>
                   </td>
@@ -138,7 +155,7 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <tr>
-                      <td colSpan={compact ? 11 : 13} className="!p-0">
+                      <td colSpan={(compact ? 11 : 13) + (openSymbols.length > 0 ? 1 : 0)} className="!p-0">
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
                           <PickDetail pick={p} />
                         </motion.div>

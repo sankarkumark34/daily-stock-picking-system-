@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   AiNoteResponseDto,
   AnalystAnswerDto,
+  LiveMarketDto,
+  LiveQuoteDto,
   StockAnalysisDto,
   BacktestParams,
   BacktestRunDto,
@@ -120,6 +122,21 @@ export const useAiNote = (symbol: string | undefined, enabled: boolean) =>
 
 export const useAskAnalyst = (symbol: string | undefined) =>
   useMutation({ mutationFn: (question: string) => api.post<AnalystAnswerDto>(`/analyst/${symbol}/ask`, { question }) })
+
+export const useLiveQuotes = (symbols: string[]) => {
+  const key = [...new Set(symbols)].sort().join(',')
+  return useQuery({
+    queryKey: ['live', 'quotes', key],
+    enabled: key.length > 0,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+    retry: 1,
+    queryFn: () => api.get<LiveQuoteDto[]>(`/live/quotes${qs({ symbols: key })}`),
+  })
+}
+
+export const useLiveMarket = () =>
+  useQuery({ queryKey: ['live', 'market'], refetchInterval: 60_000, staleTime: 30_000, retry: 1, queryFn: () => api.get<LiveMarketDto>('/live/market') })
 
 export function useInvalidate() {
   const qc = useQueryClient()

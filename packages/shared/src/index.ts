@@ -575,6 +575,35 @@ export interface AnalystAnswerDto {
   generatedAt: string;
 }
 
+/* ---------------- Live (delayed) quotes ---------------- */
+
+export interface LiveQuoteDto {
+  symbol: string;
+  /** last traded price */
+  ltp: number;
+  prevClose: number;
+  changePct: number;
+  dayHigh: number | null;
+  dayLow: number | null;
+  dayOpen: number | null;
+  volume: number | null;
+  /** ISO time of the last trade the source reported */
+  asOf: string;
+  /** true when the exchange session is open right now */
+  marketOpen: boolean;
+  /** e.g. "yahoo-delayed" */
+  source: string;
+  /** typical delay of the source in minutes */
+  delayMinutes: number;
+}
+
+export interface LiveMarketDto {
+  nifty: LiveQuoteDto | null;
+  vix: LiveQuoteDto | null;
+  marketOpen: boolean;
+  fetchedAt: string;
+}
+
 export interface DailyRunResultDto {
   date: string;
   picks: PickDto[];

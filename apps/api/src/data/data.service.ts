@@ -76,7 +76,15 @@ export class DataService {
 
   async isIngested(date: string): Promise<boolean> {
     const row = await this.logs.findOne({ where: { date, source: 'equity' }, order: { id: 'DESC' } });
-    return !!row && (row.status === 'OK' || row.status === 'EMPTY');
+    if (!row) return false;
+    if (row.status === 'OK') return true;
+    // An EMPTY result is only final when it was recorded on a later IST calendar day
+    // than the trading date — earlier the file may simply not have been published yet.
+    if (row.status === 'EMPTY') {
+      const loggedIst = new Date(new Date(row.createdAt).getTime() + 5.5 * 3600_000).toISOString().slice(0, 10);
+      return loggedIst > date;
+    }
+    return false;
   }
 
   /**

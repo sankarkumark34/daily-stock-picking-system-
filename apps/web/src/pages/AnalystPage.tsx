@@ -5,7 +5,8 @@ import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { Badge, Button, Callout, Card, InfoTip, PageHeader, ProgressBar, Skeleton, StatTile, Term, fadeUp, staggerList } from '../components/ui'
-import { useAiNote, useAskAnalyst, useStockAnalysis } from '../lib/api'
+import { useAiNote, useAskAnalyst, useLiveQuotes, useStockAnalysis } from '../lib/api'
+import { LiveBadge, LivePrice } from '../components/LivePrice'
 import { StockSearch, rememberSymbol } from '../components/StockSearch'
 import { dateLong, fmt, inr, pct, regimeLabel, regimeTone, setupLabel, setupTone, timeAgo, type Tone } from '../lib/format'
 import { PicksTable } from './PicksPage'
@@ -56,6 +57,8 @@ export function AnalystPage() {
 
 function Analysis({ a }: { a: StockAnalysisDto }) {
   const groups = [...new Set(a.checklist.map((c) => c.group))]
+  const { data: quotes } = useLiveQuotes([a.symbol])
+  const live = quotes?.[0]
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -71,9 +74,21 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
             {a.name ?? '—'} · as of {dateLong(a.asOf)}
             {a.sectorRank !== null && ` · sector rank #${a.sectorRank}`}
           </p>
-          <div className="mt-3 flex items-baseline gap-3">
-            <span className="text-3xl font-semibold tnum">{inr(a.price)}</span>
-            <span className={clsx('text-sm tnum', signCls(a.changePct))}>{pct(a.changePct, 2, true)} today</span>
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            {live ? (
+              <>
+                <LivePrice q={live} size="lg" />
+                <LiveBadge q={live} />
+                <span className="text-xs text-ink-500">
+                  EOD close {inr(a.price)} ({pct(a.changePct, 2, true)})
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-3xl font-semibold tnum">{inr(a.price)}</span>
+                <span className={clsx('text-sm tnum', signCls(a.changePct))}>{pct(a.changePct, 2, true)} today</span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">

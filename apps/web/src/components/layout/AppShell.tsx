@@ -2,7 +2,8 @@ import clsx from 'clsx'
 import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { useDataStatus, useMarketOverview } from '../../lib/api'
+import { useDataStatus, useLiveMarket, useMarketOverview } from '../../lib/api'
+import { LiveBadge, LivePrice } from '../LivePrice'
 import { StockSearch } from '../StockSearch'
 import { dateShort, regimeLabel, regimeTone } from '../../lib/format'
 import { Badge } from '../ui'
@@ -67,6 +68,7 @@ export function AppShell() {
 
 function TopBar() {
   const { data: overview } = useMarketOverview()
+  const { data: live } = useLiveMarket()
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-ink-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
       <div className="flex items-center gap-3 lg:hidden">
@@ -91,13 +93,27 @@ function TopBar() {
             <Badge tone={regimeTone(overview.regime)} size="md">
               {regimeLabel(overview.regime)}
             </Badge>
-            <span className="hidden items-center gap-1.5 tnum text-ink-700 md:flex">
-              NIFTY <strong>{overview.nifty.close.toLocaleString('en-IN')}</strong>
-              <span className={overview.nifty.changePct >= 0 ? 'text-up-600' : 'text-down-600'}>
-                {overview.nifty.changePct >= 0 ? '+' : ''}
-                {overview.nifty.changePct.toFixed(2)}%
+            {live?.nifty ? (
+              <span className="hidden items-center gap-2 md:flex">
+                <span className="text-ink-500">NIFTY</span>
+                <LivePrice q={live.nifty} />
+                {live.vix && (
+                  <span className="hidden items-center gap-1 text-xs text-ink-500 lg:inline-flex">
+                    · VIX <span className="tnum font-medium text-ink-700">{live.vix.ltp.toFixed(2)}</span>
+                  </span>
+                )}
+                <LiveBadge q={live.nifty} />
               </span>
-            </span>
+            ) : (
+              <span className="hidden items-center gap-1.5 tnum text-ink-700 md:flex">
+                NIFTY <strong>{overview.nifty.close.toLocaleString('en-IN')}</strong>
+                <span className={overview.nifty.changePct >= 0 ? 'text-up-600' : 'text-down-600'}>
+                  {overview.nifty.changePct >= 0 ? '+' : ''}
+                  {overview.nifty.changePct.toFixed(2)}%
+                </span>
+                <span className="text-[10px] text-ink-400">EOD</span>
+              </span>
+            )}
           </>
         ) : (
           <Badge tone="neutral" size="md">
