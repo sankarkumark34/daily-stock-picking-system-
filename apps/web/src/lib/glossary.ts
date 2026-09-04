@@ -1,11 +1,14 @@
 /**
- * Plain-language explanations for every technical term shown in the UI.
- * Keys are stable ids used by <InfoTip term="…" /> and <Term k="…" />.
+ * Explanations for every technical term shown in the UI, written for an end user
+ * who is not a trader. Each entry has three layers:
+ *   simple    – one sentence anyone can understand (analogy allowed)
+ *   technical – the exact definition, for readers who want precision
+ *   read      – how to interpret the number on screen, with a concrete example
  */
 export interface GlossaryEntry {
   title: string
-  text: string
-  /** How to read the number when it appears next to the term */
+  simple: string
+  technical: string
   read?: string
 }
 
@@ -13,111 +16,460 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   /* ---------- scores & picks ---------- */
   score: {
     title: 'Composite score',
-    text: 'The stock’s total out of 100 after adding up the ten weighted factors (momentum, trend, relative strength, volume, price structure, sector, market regime, volatility, fundamentals, risk/reward).',
-    read: 'Higher is better. The daily model only lists stocks above 72.',
+    simple: 'A report-card mark out of 100 for the stock today. Ten subjects (momentum, trend, volume…) each give marks; the marks are added up.',
+    technical: 'Weighted sum of ten factor scores (each 0–100) using the model weights: Momentum 15, Trend 15, Relative Strength 15, Volume 10, Price Structure 10, Sector 10, Market Regime 10, Volatility 5, Fundamentals 5, Risk/Reward 5.',
+    read: 'Higher is better. Below 72 the stock is not listed at all. 72–77 = just made the cut, 78–84 = strong, 85+ = everything lining up. Example: 79.1 means a good all-round setup, not a rare one.',
   },
   confidence: {
     title: 'Confidence',
-    text: 'How much the system trusts this pick: blends the score, how many factors agree, and how often this setup type has actually worked in the past.',
-    read: '0–100 %. Below 50 % means history says the setup is coin-flip or worse.',
+    simple: 'How sure the system is about this idea — like a weather forecast’s “70 % chance of rain”.',
+    technical: '0.45 × score + 0.30 × historical win-rate of this setup type + 0.25 × share of factors scoring ≥ 60, scaled by the market-regime long bias.',
+    read: 'Above 60 % = history and today’s numbers agree. 40–60 % = mixed. Below 40 % = the setup type has usually failed before — treat the idea with suspicion. Example: 46 % means roughly a coin flip.',
   },
-  rank: { title: 'Rank', text: 'Position in today’s list, sorted by composite score (ties broken by risk/reward).' },
+  rank: {
+    title: 'Rank',
+    simple: 'Position in today’s list — #1 is the best-scoring idea.',
+    technical: 'Ordered by composite score, ties broken by risk/reward. At most 10 per day and at most 2 per sector.',
+  },
   setup: {
     title: 'Setup',
-    text: 'The price pattern that triggered the idea. Breakout = closed above the last 20 days’ high on big volume. Pullback = uptrend that dipped to the 21-day average and turned up. Trend continuation = all moving averages stacked upward and price near highs. Reversal = oversold stock bouncing off support.',
+    simple: 'The chart “pattern” that made the system notice the stock today — the reason it is on the list.',
+    technical:
+      'Breakout: close above the prior 20-day high on ≥ 1.5× volume. Pullback: uptrend (EMA21 > EMA50 > SMA200) that dipped to the 21-EMA and closed up. Trend continuation: EMAs stacked 9 > 21 > 50 > 200, ADX ≥ 25, within 5 % of the 20-day high. Reversal: RSI was ≤ 32, price held the 20-day low and closed up on volume.',
+    read: 'Breakouts and trend continuations bet the move keeps going; pullbacks buy a dip inside a rising trend; reversals bet a beaten-down stock bounces.',
   },
-  entry: { title: 'Entry', text: 'The price the idea is based on — the closing price on the signal day. The system assumes you buy near the next day’s open.', read: 'The entry range is ±0.3–0.5 % around it.' },
-  target: { title: 'Target', text: 'Where the trade is meant to be closed with a profit: entry + about 2 × ATR (a typical multi-day move for this stock).', read: 'If price touches this before the stop → SUCCESS.' },
-  stopLoss: { title: 'Stop loss', text: 'Where the trade is cut to limit damage: about 1.25 × ATR below entry, or just under the recent low, whichever is tighter.', read: 'If price touches this first → FAILURE.' },
-  riskReward: { title: 'Risk / reward (R:R)', text: 'Potential gain to the target divided by potential loss to the stop.', read: '2.0 means you stand to make ₹2 for every ₹1 you risk. Break-even win rate = 1 ÷ (1 + R:R).' },
-  holdDays: { title: 'Holding period', text: 'How many trading sessions the idea is given to reach the target. If neither target nor stop is hit by then it is closed at that day’s close (EXPIRED).' },
+  entry: {
+    title: 'Entry',
+    simple: 'The price the plan starts from — roughly what you would pay if you bought at the next morning’s open.',
+    technical: 'Closing price on the signal day. Entry range = close × 0.997 to close × 1.005. Fills more than 2 % above the entry are treated as “no fill”.',
+    read: 'Example: entry ₹857 with range ₹854–₹861 — buying at ₹880 is not the plan any more.',
+  },
+  target: {
+    title: 'Target',
+    simple: 'The price where the plan says “take the profit and get out”.',
+    technical: 'Entry + ~2 × ATR(14) (2.0× breakout, 2.2× trend continuation, 1.8× pullback/reversal) — about one normal week’s move for that stock, rounded to the ₹0.05 tick.',
+    read: 'If price touches the target before the stop, the pick is counted a SUCCESS. Example: entry ₹857, target ₹926 = +8 %.',
+  },
+  stopLoss: {
+    title: 'Stop loss',
+    simple: 'The price where the plan says “this is not working, exit and keep the loss small”.',
+    technical: 'Entry − ~1.25 × ATR(14), or just below the recent swing low / 21-EMA, whichever is tighter. Risk is forced between 1.5 % and 8 % of entry.',
+    read: 'If price touches the stop first, the pick is a FAILURE. Example: entry ₹857, stop ₹814 = −5 %. Never move it lower once set.',
+  },
+  riskReward: {
+    title: 'Risk / reward (R:R)',
+    simple: 'How much you could win compared with how much you could lose. 2:1 means “win ₹2 for every ₹1 risked”.',
+    technical: '(Target − Entry) ÷ (Entry − Stop). Break-even win rate = 1 ÷ (1 + R:R).',
+    read: 'At 1.6 : 1 you need to be right more than 38 % of the time to make money. Below 1.2 the system drops the idea. Higher is better, but very high R:R usually means a far-away target that is rarely reached.',
+  },
+  holdDays: {
+    title: 'Holding period',
+    simple: 'How many trading days the idea is given to work before it is closed no matter what.',
+    technical: '5 sessions for breakout / pullback / reversal, 7 for trend continuation, counted from the fill day. If neither target nor stop is touched, the trade is closed at that day’s close and marked EXPIRED.',
+    read: 'Example: “5d” on a Monday pick = decision by the following Monday.',
+  },
   outcome: {
     title: 'Outcome',
-    text: 'What actually happened after the pick. Target hit = success. Stop hit = failure. Expired = holding period ended without touching either. No fill = the next open gapped more than 2 % above entry so no trade was taken. Open = still running.',
+    simple: 'What actually happened to the idea afterwards — the system checks itself every day.',
+    technical:
+      'Target hit = target touched before stop (SUCCESS). Stop hit = stop touched first (FAILURE; if both on the same day, counted as failure). Expired = holding period over, closed at that day’s close. No fill = next open gapped > 2 % above entry, trade skipped. Open = still within the holding period.',
+    read: 'Only SUCCESS / FAILURE / EXPIRED count toward hit rates.',
   },
-  netReturn: { title: 'Net return', text: 'Profit or loss of the trade after brokerage, STT, exchange charges, GST, stamp duty and 0.05 % slippage each way (≈ 0.39 % round trip).' },
-  direction: { title: 'Direction', text: 'The system only generates LONG (buy) ideas. It never shorts.' },
+  netReturn: {
+    title: 'Net return',
+    simple: 'What the trade actually made or lost after all charges — the number that matters for your wallet.',
+    technical: 'Exit ÷ fill − 1, after brokerage 0.03 %, STT 0.1 % each side, exchange + SEBI fees, stamp duty, GST on charges and 0.05 % slippage each side (≈ 0.39 % round trip).',
+    read: 'Example: +3.0 % gross becomes about +2.6 % net.',
+  },
+  direction: {
+    title: 'Direction',
+    simple: 'Whether the idea is to buy (go long) or sell short. This system only ever says “buy”.',
+    technical: 'All signals are LONG. No short-selling logic is implemented.',
+  },
 
   /* ---------- factors ---------- */
   momentum: {
     title: 'Momentum',
-    text: 'Is the stock already moving up? Compares its 5-, 20- and 60-day returns with every other stock (percentile rank), plus RSI zone and MACD histogram.',
-    read: '90th percentile = it beat 90 % of stocks over that window.',
+    simple: 'Is the stock already running? Like a cricket batter in form — recent performance tends to continue for a while.',
+    technical: 'Percentile rank of 5-, 20- and 60-day returns across the whole universe (weights 0.25 / 0.45 / 0.30), +6 if RSI is 55–72, −10 if RSI > 80, +4 if MACD histogram > 0, −5 if Stoch-RSI > 80 with a > 6 % five-day jump.',
+    read: '“20d return 13.7 % (90th pct)” = it beat 90 % of all stocks over the last 20 days. Above 70 = strong momentum; below 40 = lagging.',
   },
-  trend: { title: 'Trend', text: 'Are the moving averages lined up bullishly (9 EMA > 21 EMA > 50 EMA > 200 SMA), is price above the 200-day average, is ADX strong, is Supertrend up?' },
-  relativeStrength: { title: 'Relative strength', text: 'Is the stock beating NIFTY and its own sector over the last 20 and 60 days? Strong stocks in strong sectors score highest.' },
-  volume: { title: 'Volume', text: 'Is real money participating? Today’s volume vs the 20-day average, OBV slope, whether up-days carry more volume than down-days, and delivery % vs its average.' },
-  priceStructure: { title: 'Price structure', text: 'Is the chart healthy? Distance from the 20-day and 52-week highs, whether recent lows are higher than earlier lows, where price sits inside the Bollinger Bands, and where it closed within today’s range.' },
-  sectorStrength: { title: 'Sector strength', text: 'How the stock’s whole sector is doing versus NIFTY (median 5- and 20-day return, % of members above their 21-EMA, rising 21-EMAs, relative volume). Rank #1 = strongest sector today.' },
+  trend: {
+    title: 'Trend',
+    simple: 'Is the stock in a clear uptrend, like a staircase going up, rather than zig-zagging sideways?',
+    technical: 'Points for price > EMA9, EMA9 > EMA21, EMA21 > EMA50, EMA50 > SMA200, price > SMA200, Supertrend bullish, plus up to 25 points for ADX between 15 and 40.',
+    read: '“3/3 EMA alignments bullish” = all moving averages stacked in the right order. 100 = textbook uptrend; below 40 = downtrend or messy.',
+  },
+  relativeStrength: {
+    title: 'Relative strength',
+    simple: 'Is this stock doing better than the market and its own sector? A strong swimmer in a strong current goes fastest.',
+    technical: 'Percentile of (stock 20d return − NIFTY 20d return) × 0.6 + percentile of the 60-day equivalent × 0.4, ± up to 10 for return vs the sector median.',
+    read: '“Outperforming NIFTY by 15.9 % over 20d” = if NIFTY was flat the stock rose ~16 %. Above 70 = leader; below 40 = laggard.',
+  },
+  volume: {
+    title: 'Volume',
+    simple: 'Is real money behind the move? A price rise on heavy trading is believable; on thin trading it is easy to fake.',
+    technical: '30 + relative volume bonus (up to +30 at 2.2×), OBV 10-day slope (±15), up-day vs down-day volume ratio (±15), delivery % vs its 20-day average (±10).',
+    read: '“Volume 1.0× avg” = an ordinary day. 2× or more with a rising price = conviction. Below 40 means the move is not confirmed by participation.',
+  },
+  priceStructure: {
+    title: 'Price structure',
+    simple: 'Does the chart look healthy — near its highs with dips that keep getting shallower — or is it a broken chart far below old peaks?',
+    technical: 'Distance to the 20-day high (25 pts), to the 52-week high (20), higher swing lows (10 each), Bollinger %B between 0.5 and 1.05 (10), close in the top 30 % of the day’s range (5).',
+    read: '“1.6 % below 52-week high, 2 higher swing lows” = near the top with rising floors: ideal. Below 40 = lots of overhead sellers waiting to break even.',
+  },
+  sectorStrength: {
+    title: 'Sector strength',
+    simple: 'Is the whole industry group (IT, banks, pharma…) in favour right now? Stocks rarely rise alone; the sector tide matters.',
+    technical: 'Sector score 0–100 from the median 20-day and 5-day return vs NIFTY, % of members above their 21-EMA, % with a rising 21-EMA, and median relative volume. Ranked across ~20 sectors.',
+    read: '“Information Technology ranked #3 (score 58)” = third-strongest sector today. Rank 1–5 is supportive; rank 15+ is a headwind.',
+  },
   marketRegime: {
     title: 'Market regime',
-    text: 'The overall market mood, scored 0–100 from NIFTY’s trend, momentum, market breadth and India VIX. Strong Bullish (≥ 75) → Bullish → Sideways → Bearish → Strong Bearish (< 22).',
-    read: 'In bearish regimes long ideas are penalised and the quality bar is raised.',
+    simple: 'The overall weather of the market — sunny (bullish), cloudy (sideways) or stormy (bearish). Even good stocks struggle in a storm.',
+    technical: 'Score 0–100: NIFTY trend vs EMA21/SMA50/SMA200 (50 pts) + momentum (25) + breadth (25) − VIX penalty. ≥ 75 Strong Bullish, ≥ 58 Bullish, ≥ 40 Sideways, ≥ 22 Bearish, else Strong Bearish.',
+    read: '“Bearish regime (score 24)” = the market itself is weak, so long ideas get a lower factor score and need a higher composite score to be listed. Buy less, or wait.',
   },
-  volatility: { title: 'Volatility', text: 'Is the stock’s daily movement tradeable? ATR of 1.5–4 % of price scores best; very quiet or very wild stocks score lower. 20-day historical volatility above 60 % is penalised.' },
-  fundamentals: { title: 'Fundamentals', text: 'Business quality (ROE, profit growth, debt, promoter holding). No free point-in-time source exists, so this factor is neutral (50/100) until a data provider is connected.' },
+  volatility: {
+    title: 'Volatility',
+    simple: 'How wildly the stock swings each day. Too calm and nothing happens in a week; too wild and the stop gets hit by noise.',
+    technical: 'ATR(14) as % of price: 1.5–4 % scores 90, 1–1.5 % → 60, 4–6 % → 60, < 1 % → 35, > 6 % → 25; −15 if 20-day historical volatility > 60 %.',
+    read: '“ATR 2.5 % of price” = a normal day moves about 2.5 %, which is the sweet spot for a 5-day trade.',
+  },
+  fundamentals: {
+    title: 'Fundamentals',
+    simple: 'How good the underlying business is — profits, debt, who owns it. Right now the system has no reliable free source for this.',
+    technical: 'Would score ROE, profit growth, debt/equity and promoter holding. Without a point-in-time provider the factor is fixed at a neutral 50/100.',
+    read: 'Always 50 for now — it neither helps nor hurts any stock. Check fundamentals yourself before buying.',
+  },
 
   /* ---------- indicators ---------- */
-  rsi: { title: 'RSI 14 (Relative Strength Index)', text: 'Speed of recent price changes on a 0–100 scale over 14 days.', read: 'Above 70 = overbought (stretched), below 30 = oversold (washed out), 45–70 = healthy momentum.' },
-  stochRsi: { title: 'Stochastic RSI', text: 'Where today’s RSI sits within its own 14-day high–low range, 0–100. Above 80 means momentum is as hot as it has been recently.' },
-  ema: { title: 'EMA (Exponential Moving Average)', text: 'Average price over N days that reacts faster to recent prices. Price above a rising EMA = uptrend on that horizon.' },
-  sma: { title: 'SMA (Simple Moving Average)', text: 'Plain average of the last N closes. The 200-day SMA is the classic line between long-term uptrend (price above) and downtrend (price below).' },
-  sma200: { title: '200-day SMA', text: 'Average close of the last 200 sessions (~10 months). Price above it = long-term uptrend; below = downtrend. Many funds only buy above it.' },
-  adx: { title: 'ADX 14 (Average Directional Index)', text: 'Measures how strong a trend is — not its direction.', read: 'Below 15 = choppy, 20–25 = a trend is forming, above 25 = strong trend.' },
-  macd: { title: 'MACD histogram', text: 'Difference between the 12- and 26-day EMAs, minus its own 9-day average. Positive and rising = short-term momentum accelerating; negative = fading.' },
-  atr: { title: 'ATR 14 (Average True Range)', text: 'The stock’s typical daily movement in rupees over the last 14 days (including overnight gaps). ATR % expresses it as a percentage of price.', read: '2 % ATR means a normal day moves about 2 %. Targets and stops are set in ATR multiples.' },
-  supertrend: { title: 'Supertrend', text: 'A trailing line built from ATR. Price above the line = bullish, below = bearish. Flips when price crosses it.' },
-  obv: { title: 'OBV slope (On-Balance Volume)', text: 'Adds volume on up-days, subtracts it on down-days. A rising OBV means buyers dominate (accumulation); falling means sellers dominate (distribution).' },
-  bollinger: { title: 'Bollinger %B / width', text: '%B says where price is inside the 20-day bands: 0 = at the lower band, 1 = at the upper band, above 1 = above the band (stretched). Width is how wide the bands are as % of price — low width often precedes a big move.' },
-  roc: { title: 'ROC (Rate of Change)', text: 'Percentage change in price over N days. ROC 20 = +12 % means the stock is 12 % higher than 20 sessions ago.' },
-  cci: { title: 'CCI 20 (Commodity Channel Index)', text: 'How far price is from its 20-day average in units of typical deviation. Above +100 = strong up-move, below −100 = strong down-move.' },
-  hv: { title: 'Historical volatility (20d)', text: 'Annualised standard deviation of daily returns over 20 days. 30 % is typical for a large cap; above 60 % is very jumpy.' },
-  relVol: { title: 'Relative volume', text: 'Today’s volume divided by the average of the previous 20 sessions.', read: '2.0× = twice the usual volume — confirms a move is being noticed.' },
-  delivery: { title: 'Delivery %', text: 'Share of traded quantity that was actually taken as delivery into demat accounts (not squared off intraday). Higher than usual = investors, not just traders, are buying.' },
-  turnover: { title: 'Traded value (turnover)', text: 'Price × quantity traded, in rupees. The system requires ≥ ₹1 L today, ≥ ₹10 L over 5 sessions and ≥ ₹1 Cr over 21 sessions so you can enter and exit without moving the price.' },
-  higherLows: { title: 'Higher swing lows', text: 'Counts whether each recent 5-day low is above the one before it (0–2). Rising lows = buyers stepping in earlier each dip.' },
-  dist52w: { title: 'Distance from 52-week high', text: 'How far below the highest price of the last year the stock trades. Near the high = no trapped sellers overhead; deep below = heavy resistance.' },
-  ext21: { title: 'Extension from EMA 21', text: 'How far above its 21-day EMA the price has run. More than 10 % usually snaps back — a poor place to enter.' },
+  rsi: {
+    title: 'RSI 14 (Relative Strength Index)',
+    simple: 'A speedometer for price: how fast and how one-sided the last two weeks of moves have been, on a 0–100 dial.',
+    technical: 'Average gain ÷ average loss over 14 days (Wilder smoothing), converted to 0–100: RSI = 100 − 100 ÷ (1 + avg gain / avg loss).',
+    read: 'Above 70 = overbought (stretched; pullback risk). Below 30 = oversold (washed out; bounce possible). 45–70 = healthy, sustainable momentum. Example: RSI 73 = strong but a bit hot.',
+  },
+  stochRsi: {
+    title: 'Stochastic RSI',
+    simple: 'Where today’s RSI sits between its own recent low and high — is momentum at its hottest or coolest of the last two weeks?',
+    technical: '(RSI − 14-day min RSI) ÷ (14-day max − min) × 100, smoothed over 3 days.',
+    read: 'Above 80 = momentum as hot as it has been lately; below 20 = as cold. Used to spot short-term exhaustion.',
+  },
+  ema: {
+    title: 'EMA (Exponential Moving Average)',
+    simple: 'A smoothed price line that follows the stock, giving more weight to recent days — like a running average of your last N scores that cares more about this week.',
+    technical: 'EMAₜ = price × k + EMAₜ₋₁ × (1 − k), with k = 2 ÷ (N + 1). Used for 9, 21 and 50 days.',
+    read: 'Price above a rising EMA = uptrend on that horizon. EMA9 > EMA21 > EMA50 = short, medium and long views all agree.',
+  },
+  sma: {
+    title: 'SMA (Simple Moving Average)',
+    simple: 'The plain average price of the last N days — the smoothest, slowest trend line.',
+    technical: 'Arithmetic mean of the last N closing prices (20, 50, 200 days).',
+    read: 'Price above SMA = trend up on that horizon; below = down.',
+  },
+  sma200: {
+    title: '200-day SMA',
+    simple: 'The average price of the last ~10 months — the classic line between a stock that is “in a bull phase” and one that is “in a bear phase”.',
+    technical: 'Arithmetic mean of the last 200 daily closes.',
+    read: 'Price above it = long-term uptrend; below = downtrend. Many funds only buy above it, which is why it is a critical check here. Example: “−6.2 %” = price is 6 % under the line, so the long-term trend is down.',
+  },
+  adx: {
+    title: 'ADX 14 (Average Directional Index)',
+    simple: 'Measures how strong a trend is — not which way it points. A high ADX with rising prices = a powerful uptrend.',
+    technical: 'Smoothed |+DI − −DI| ÷ (+DI + −DI) × 100 over 14 days, where DI are directional movement indicators.',
+    read: 'Below 15 = choppy, no trend. 20–25 = a trend is forming. Above 25 = strong, established trend. Example: ADX 42 = very strong trend.',
+  },
+  macd: {
+    title: 'MACD histogram',
+    simple: 'Is short-term momentum speeding up or slowing down? Positive and growing = accelerating.',
+    technical: 'MACD line = EMA12 − EMA26; signal = EMA9 of the MACD line; histogram = MACD − signal.',
+    read: 'Above 0 = momentum ahead of its own average (bullish). Below 0 = fading. A cross from negative to positive is often an early buy signal.',
+  },
+  atr: {
+    title: 'ATR 14 (Average True Range)',
+    simple: 'How much the stock typically moves in a day, in rupees — its “normal step size”. Targets and stops are set in multiples of it.',
+    technical: 'Wilder average over 14 days of true range = max(high − low, |high − previous close|, |low − previous close|). ATR % = ATR ÷ price.',
+    read: 'Example: ATR 2.5 % = a normal day moves ~2.5 %. A 2 × ATR target is about a week’s worth of movement.',
+  },
+  supertrend: {
+    title: 'Supertrend',
+    simple: 'A trailing line under (or over) the price that flips colour when the trend changes — like a ratchet that follows the stock.',
+    technical: 'Bands at mid-price ± 3 × ATR(10); the line trails price and direction flips when price closes through it.',
+    read: 'Bullish = price above the line. Bearish = below.',
+  },
+  obv: {
+    title: 'OBV slope (On-Balance Volume)',
+    simple: 'Are more shares changing hands on up-days than on down-days? If yes, buyers are quietly accumulating.',
+    technical: 'OBV adds the day’s volume on up-closes and subtracts it on down-closes. Slope = (OBV − OBV 10 days ago) ÷ (average volume × 10).',
+    read: 'Positive = accumulation (bullish). Negative = distribution (sellers dominate). Example: −0.26 means down-days carried more volume recently.',
+  },
+  bollinger: {
+    title: 'Bollinger %B / width',
+    simple: 'A “normal range” drawn around the 20-day average. %B says where price is inside that range; width says how wide the range is.',
+    technical: 'Bands = SMA20 ± 2 standard deviations. %B = (price − lower) ÷ (upper − lower). Width = (upper − lower) ÷ SMA20.',
+    read: '%B 0 = at the bottom of the range, 1 = at the top, > 1 = outside the top (stretched). Very narrow width often comes just before a big move.',
+  },
+  roc: {
+    title: 'ROC (Rate of Change)',
+    simple: 'Plain percentage change over N days — “how much is it up compared with N trading days ago?”',
+    technical: '(price today ÷ price N days ago − 1) × 100.',
+    read: 'ROC 20 = +12 % means 12 % higher than 20 sessions ago.',
+  },
+  cci: {
+    title: 'CCI 20 (Commodity Channel Index)',
+    simple: 'How far price has strayed from its usual level over 20 days, in “typical deviation” units.',
+    technical: '(typical price − 20-day SMA of typical price) ÷ (0.015 × mean deviation), typical price = (high + low + close) ÷ 3.',
+    read: 'Above +100 = unusually strong up-move; below −100 = unusually strong down-move. Between = normal.',
+  },
+  hv: {
+    title: 'Historical volatility (20d)',
+    simple: 'How jumpy the stock has been over the last month, expressed as a yearly percentage.',
+    technical: 'Standard deviation of daily log returns over 20 days × √252 × 100.',
+    read: '20–30 % = calm large cap. 40–60 % = lively mid/small cap. Above 60 % = very jumpy; stops get hit by noise.',
+  },
+  relVol: {
+    title: 'Relative volume',
+    simple: 'Today’s trading activity compared with a normal day for this stock.',
+    technical: 'Today’s volume ÷ average volume of the previous 20 sessions.',
+    read: '1.0× = normal. 2.0× = twice the usual — the move is being noticed. Below 0.8× = quiet, low conviction.',
+  },
+  delivery: {
+    title: 'Delivery %',
+    simple: 'Of all shares traded today, how many were actually kept overnight (taken into demat) instead of flipped within the day. Kept shares = real investors.',
+    technical: 'Deliverable quantity ÷ traded quantity × 100, from NSE’s daily MTO file.',
+    read: 'Higher than its own average = investors buying, not just traders. Example: 59 % vs a 59 % average = nothing unusual.',
+  },
+  turnover: {
+    title: 'Traded value (turnover)',
+    simple: 'How many rupees changed hands in the stock — price × shares traded. Enough turnover means you can buy and sell without pushing the price yourself.',
+    technical: 'Daily traded value from the bhavcopy. The model requires ≥ ₹1 L today, ≥ ₹10 L over the last 5 sessions and ≥ ₹1 Cr over the last 21 sessions.',
+    read: 'Example: ₹1,640 Cr / day for Reliance = extremely liquid. ₹20 L / day = tiny; expect slippage.',
+  },
+  higherLows: {
+    title: 'Higher swing lows',
+    simple: 'Each dip stops higher than the previous one — buyers are stepping in earlier every time. A staircase pattern.',
+    technical: 'Counts (0–2) whether the lowest low of the last 5 bars is above the previous 5-bar low, and that one above the 5-bar low before it.',
+    read: '2/2 = clean rising floors. 0/2 = no support structure yet.',
+  },
+  dist52w: {
+    title: 'Distance from 52-week high',
+    simple: 'How far below its best price of the past year the stock sits. Near the high = nobody is stuck waiting to sell at break-even.',
+    technical: '(price ÷ highest high of the last 252 sessions − 1) × 100.',
+    read: 'Within −5 % = strength. −5 % to −15 % = OK. Deeper = heavy overhead resistance. Example: −18.8 % = a lot of trapped sellers above.',
+  },
+  ext21: {
+    title: 'Extension from EMA 21',
+    simple: 'How far the price has sprinted ahead of its own 3-week average. Sprint too far and it usually catches its breath (pulls back).',
+    technical: '(price ÷ EMA21 − 1) × 100.',
+    read: 'Under 10 % = fine. 10–15 % = stretched. Above 15 % = chasing; wait for a dip.',
+  },
 
   /* ---------- market ---------- */
-  nifty: { title: 'NIFTY 50', text: 'India’s benchmark index of the 50 largest NSE stocks. Used as the yardstick for relative strength and market regime.' },
-  vix: { title: 'India VIX', text: 'The market’s expected volatility for the next 30 days, derived from NIFTY option prices — the “fear gauge”.', read: 'Below 13 = calm, 13–18 = normal, above 20 (or 25 % over its 60-day average) = fear; long ideas are penalised.' },
-  breadth: { title: 'Market breadth', text: 'How many stocks are participating: advances vs declines today, % of stocks above their 50- and 200-day averages, new 20-day highs vs lows. Narrow breadth = a fragile rally.' },
-  adRatio: { title: 'Advance / decline ratio', text: 'Number of stocks up today divided by the number down. 1.5 = broad buying; 0.5 = broad selling.' },
-  regimeScore: { title: 'Regime score', text: 'The 0–100 number behind the regime label: trend of NIFTY (50 pts) + momentum (25) + breadth (25), minus a VIX penalty.' },
-  longBias: { title: 'Long bias', text: 'Multiplier applied to confidence in this regime: 1.0 in strong bull markets, 0.45 in bearish, 0.25 in strong bearish.' },
-  sectorRank: { title: 'Sector rank', text: 'Where the sector stands today among all ~20 sectors by the sector strength score (#1 strongest).' },
+  nifty: {
+    title: 'NIFTY 50',
+    simple: 'India’s main stock market index — 50 of the biggest companies. “The market” usually means this number.',
+    technical: 'Free-float market-cap weighted index of 50 large NSE stocks. Used here as the benchmark for relative strength and for the market regime.',
+    read: 'A stock “outperforming NIFTY by 5 %” rose 5 % more than the market did.',
+  },
+  vix: {
+    title: 'India VIX',
+    simple: 'The market’s “fear meter”. When traders expect big swings (war news, elections, crashes) it jumps.',
+    technical: 'Expected 30-day annualised volatility of NIFTY implied by option prices.',
+    read: 'Below 13 = calm. 13–18 = normal. Above 20 (or 25 % above its 60-day average) = fear; the model penalises long ideas. Example: 11.5 = very calm.',
+  },
+  breadth: {
+    title: 'Market breadth',
+    simple: 'How many stocks are actually joining the party. If the index rises but most stocks fall, the rally is fragile.',
+    technical: 'Advances vs declines today, % of the universe above the 50- and 200-day SMA and the 21-EMA, count of new 20-day highs and lows.',
+    read: '“405 / 693” = 405 stocks up, 693 down today — broad selling even if the index looks fine.',
+  },
+  adRatio: {
+    title: 'Advance / decline ratio',
+    simple: 'Stocks that rose today divided by stocks that fell.',
+    technical: 'Advances ÷ declines across the liquid universe.',
+    read: 'Above 1.5 = broad buying. Around 1 = balanced. Below 0.67 = broad selling.',
+  },
+  regimeScore: {
+    title: 'Regime score',
+    simple: 'The 0–100 number behind the market weather label.',
+    technical: 'NIFTY trend vs moving averages (50 pts) + 5/20-day momentum (25) + breadth (25) − VIX penalty (12 when elevated).',
+    read: '75+ Strong Bullish, 58+ Bullish, 40+ Sideways, 22+ Bearish, below 22 Strong Bearish.',
+  },
+  longBias: {
+    title: 'Long bias',
+    simple: 'How much the system “leans in” to buying in the current market weather.',
+    technical: 'Multiplier applied to confidence: 1.0 strong bullish, 0.9 bullish, 0.7 sideways, 0.45 bearish, 0.25 strong bearish.',
+    read: '×0.45 = confidence is cut by more than half because the market is bearish.',
+  },
+  sectorRank: {
+    title: 'Sector rank',
+    simple: 'Where the stock’s industry group stands today among all sectors — #1 is the hottest.',
+    technical: 'Rank by sector strength score across the ~20 Nifty 500 industries with ≥ 3 members.',
+    read: '#1–5 supportive, #6–10 neutral, #11+ a headwind.',
+  },
 
   /* ---------- performance / backtest ---------- */
-  hitRate: { title: 'Hit rate (target-hit rate)', text: 'Share of closed picks whose target was touched before the stop.', read: 'With R:R ≈ 1.6 the break-even hit rate is about 38 %; “6 of 10” means 60 %.' },
-  directionalAccuracy: { title: 'Positive %', text: 'Share of closed picks that ended with any positive net return — including ones that expired slightly up without reaching the target.' },
-  expectancy: { title: 'Expectancy', text: 'Average net profit or loss per pick, in %. The single most important number: positive = the rules make money on average after costs.' },
-  profitFactor: { title: 'Profit factor', text: 'Total profit from winning picks ÷ total loss from losing picks.', read: 'Above 1.0 = profitable; 1.5+ = healthy; below 1.0 = losing.' },
-  avgWin: { title: 'Average win / loss', text: 'Mean net return of winning picks and of losing picks.' },
-  maxDrawdown: { title: 'Maximum drawdown', text: 'The worst peak-to-trough fall of the equity curve — how much you would have been down at the worst moment.' },
-  sharpe: { title: 'Sharpe ratio', text: 'Return per unit of volatility (annualised). Above 1 is good, above 2 excellent, negative means losing.' },
-  sortino: { title: 'Sortino ratio', text: 'Like Sharpe but only penalises downside volatility.' },
-  cagr: { title: 'CAGR', text: 'Compound annual growth rate of the model portfolio if every pick were sized at 1/10 of capital.' },
-  equity: { title: 'Equity curve', text: 'Value of ₹100 invested in the model over time, each pick sized at 1/N of current capital, net of costs.' },
-  walkForward: { title: 'Walk-forward test', text: 'Train on early years, tune on the next year, then test on a year the model never saw. Only the test-year numbers are trustworthy; train numbers are always flattering.' },
-  daysWith6of10: { title: 'Days with 6+ of 10', text: 'Selection days where at least 6 of a full 8–10 pick list hit their target — the original goal of the project.' },
-  noFill: { title: 'No fill', text: 'The next day opened more than 2 % above the entry, so the system assumes you could not buy at a sensible price and skips the trade.' },
-  expired: { title: 'Expired', text: 'Neither target nor stop was touched within the holding period; the trade is closed at that day’s close.' },
-  candidates: { title: 'Candidates', text: 'Stocks that passed the liquidity filter and showed one of the four setups on that day, before scoring and ranking.' },
-  universe: { title: 'Universe', text: 'All NSE stocks that had enough history and traded value to be considered on that day.' },
+  hitRate: {
+    title: 'Hit rate (target-hit rate)',
+    simple: 'Out of all finished picks, how many reached their target before hitting the stop. The “how often was it right” number.',
+    technical: 'SUCCESS ÷ (SUCCESS + FAILURE + EXPIRED) × 100, over closed picks only.',
+    read: 'With a 1.6 : 1 reward/risk you break even at ~38 %. The project goal of “6–7 of 10” = 60–70 %. Example: 25 % = right one time in four — losing after costs.',
+  },
+  directionalAccuracy: {
+    title: 'Positive %',
+    simple: 'How many finished picks ended up with any profit at all, even a tiny one.',
+    technical: 'Share of closed picks with net return > 0 (includes expired trades that drifted up).',
+    read: 'Always higher than the hit rate. A big gap between the two means many trades went the right way but not far enough to reach the target.',
+  },
+  expectancy: {
+    title: 'Expectancy',
+    simple: 'The average profit or loss per pick after charges. If you took every pick, this is what one trade earned you on average. The single most important number.',
+    technical: 'Mean net return % over closed picks.',
+    read: 'Positive = the rules make money on average. Example: −0.41 % = every pick lost about ₹410 per ₹1 lakh on average.',
+  },
+  profitFactor: {
+    title: 'Profit factor',
+    simple: 'Total money won divided by total money lost. Above 1 you win more than you lose.',
+    technical: 'Sum of positive net returns ÷ absolute sum of negative net returns.',
+    read: 'Below 1.0 = losing system. 1.0–1.2 = thin. 1.5+ = healthy. 2+ = excellent. Example: 0.85 = for every ₹100 lost only ₹85 was won.',
+  },
+  avgWin: {
+    title: 'Average win / loss',
+    simple: 'Typical size of a winning trade and of a losing trade.',
+    technical: 'Mean net return of picks with return > 0, and of picks with return ≤ 0.',
+    read: 'A system can have a low hit rate and still profit if the average win is much bigger than the average loss.',
+  },
+  maxDrawdown: {
+    title: 'Maximum drawdown',
+    simple: 'The deepest hole the account fell into from its previous peak — the worst “ouch” moment you would have lived through.',
+    technical: 'Minimum of (equity ÷ running peak equity − 1) over the period.',
+    read: '−20 % means at the worst point you were down a fifth from the high. Anything beyond −30 % is hard to sit through emotionally.',
+  },
+  sharpe: {
+    title: 'Sharpe ratio',
+    simple: 'Return per unit of bumpiness. Two systems with the same return — the one with a smoother ride has the higher Sharpe.',
+    technical: 'Mean daily portfolio return ÷ standard deviation of daily returns × √252.',
+    read: 'Above 1 good, above 2 excellent, negative = losing money.',
+  },
+  sortino: {
+    title: 'Sortino ratio',
+    simple: 'Like Sharpe, but only counts the downward bumps as “bad”.',
+    technical: 'Mean daily return ÷ downside deviation × √252.',
+    read: 'Higher is better; compare with Sharpe — a much higher Sortino means most volatility was on the upside.',
+  },
+  cagr: {
+    title: 'CAGR',
+    simple: 'The steady yearly growth rate that would have produced the same end result — “what % per year did this compound at?”',
+    technical: '(final equity ÷ 100)^(1 ÷ years) − 1, with every pick sized at 1/10 of current capital, net of costs.',
+    read: 'Compare with a fixed deposit (~7 %) or NIFTY itself (~12–14 % long-run). Negative = capital shrank.',
+  },
+  equity: {
+    title: 'Equity curve',
+    simple: 'What ₹100 invested in the system would have become over time, drawn as a line. You want it climbing steadily, not jagged.',
+    technical: 'Start 100; each pick sized at 1/N of current capital; daily return = Σ net returns of trades closed that day ÷ N; compounding.',
+    read: 'The gap between the line and its previous peak is the drawdown.',
+  },
+  walkForward: {
+    title: 'Walk-forward test',
+    simple: 'The honest exam: learn from the past, then test on a year the system has never seen — so the result is not just a story fitted to old data.',
+    technical: 'Anchored yearly splits: train on all years before the validation year, validate on the next year, test on the year after. Weight changes are accepted only if validation improves; only test-year metrics are out-of-sample.',
+    read: 'Trust the Test column. Train numbers are always flattering.',
+  },
+  daysWith6of10: {
+    title: 'Days with 6+ of 10',
+    simple: 'The original goal: how many days did at least 6 of the day’s (8–10) picks hit their target?',
+    technical: 'Count of selection days with ≥ 8 picks where ≥ 6 were SUCCESS.',
+    read: 'Divide by total selection days to see how often the goal was met. Example: 42 of 1,442 = about 3 % of days.',
+  },
+  noFill: {
+    title: 'No fill',
+    simple: 'The stock opened too far above the planned entry the next morning, so the system assumes you did not chase it.',
+    technical: 'Next-day open > entry × 1.02 → trade skipped, not counted in hit rates.',
+  },
+  expired: {
+    title: 'Expired',
+    simple: 'Time ran out: the stock touched neither the target nor the stop within the holding period, so it was closed at the last day’s price.',
+    technical: 'Closed at the close of the final holding day; return can be positive or negative.',
+    read: 'Many small positive expiries with few target hits usually means the targets are set too far.',
+  },
+  candidates: {
+    title: 'Candidates',
+    simple: 'Stocks that passed the liquidity check and showed one of the four patterns that day — the shortlist before scoring.',
+    technical: 'Universe members with a detected setup and valid trade levels, before ranking and the 10-per-day cap.',
+    read: '“133 / day” = the model had 133 possible ideas and kept the 10 best-scoring.',
+  },
+  universe: {
+    title: 'Universe',
+    simple: 'All the stocks the system even looked at that day.',
+    technical: 'NSE EQ symbols with ≥ 220 bars of history, price ≥ ₹30 and the traded-value floors met (today ≥ ₹1 L, 5 sessions ≥ ₹10 L, 21 sessions ≥ ₹1 Cr).',
+  },
 
   /* ---------- analyst ---------- */
-  verdict: { title: 'Verdict', text: 'Buy / Watch / Avoid from the checklist score: ≥ 70 Buy, 50–69 Watch, below 50 Avoid. A failed critical check (200-day trend, liquidity) or a strong-bearish market caps it at Watch. It summarises the evidence — it is not a forecast.' },
-  checklistScore: { title: 'Checklist score', text: 'Pass = 1 point, Warn = ½ point, Fail = 0, divided by the number of applicable checks → 0–100.' },
-  beta: { title: 'Beta vs NIFTY', text: 'How much the stock moves for a 1 % move in NIFTY, over the last year.', read: '1.3 = moves 30 % more than the index (both ways); 0.7 = defensive.' },
-  correlation: { title: 'Correlation', text: 'How closely the stock’s daily moves follow NIFTY (−1 to +1). Near 1 = moves with the market; near 0 = its own story.' },
-  annualVol: { title: 'Annualised volatility', text: 'Standard deviation of daily returns scaled to a year. 20 % = calm large cap; 50 %+ = very volatile.' },
-  stress: { title: 'Behaviour under stress', text: 'How the stock actually moved on the market’s worst and best days over the last ~3 years. A stock that falls less than NIFTY on shock days is defensive; one that falls more is high-beta / fragile — a data proxy for geopolitical and macro sensitivity.' },
-  conditional: { title: 'What history says', text: 'Every past day this stock was in the same situation as today (same setup, similar RSI, breakout…), what happened 5 / 10 / 20 sessions later — the median move and how often it was positive.' },
-  winRateFwd: { title: 'Win rate', text: 'Share of those past cases where the forward return was positive.' },
-  sentiment: { title: 'News sentiment', text: 'The AI analyst’s read of the recent headlines, −100 (very negative) to +100 (very positive).' },
-  aiStance: { title: 'AI stance', text: 'The AI analyst’s own Buy / Watch / Avoid after reading the numbers and the news — it may disagree with the checklist and explains why.' },
-  macroExposure: { title: 'Geopolitical & macro exposure', text: 'Which global forces move this stock: crude oil and Middle-East conflict, US interest rates and the dollar, tariffs and sanctions, commodity cycles, technology shifts, elections and budgets.' },
+  verdict: {
+    title: 'Verdict',
+    simple: 'A one-word summary of the checklist: Buy, Watch or Avoid. It sums up the evidence — it does not predict the future.',
+    technical: 'Checklist score ≥ 70 → Buy, 50–69 → Watch, < 50 → Avoid. Capped at Watch if a critical check (200-day trend, liquidity) fails or the market is Strong Bearish.',
+    read: 'Buy = most boxes ticked. Watch = mixed; wait for a trigger. Avoid = the odds are against a long trade now.',
+  },
+  checklistScore: {
+    title: 'Checklist score',
+    simple: 'Percentage of the 20 checks the stock passes, with half credit for “warn”.',
+    technical: '(passes + 0.5 × warns) ÷ applicable checks × 100.',
+    read: '53/100 = roughly half the boxes ticked — a mixed picture.',
+  },
+  beta: {
+    title: 'Beta vs NIFTY',
+    simple: 'How much the stock moves when the market moves. Beta 1.3 = it swings 30 % more than NIFTY, both up and down.',
+    technical: 'Slope of daily stock returns regressed on daily NIFTY returns over the last year.',
+    read: 'Above 1.2 = aggressive; 0.8–1.2 = market-like; below 0.8 = defensive. Example: 0.9 = slightly calmer than the market.',
+  },
+  correlation: {
+    title: 'Correlation',
+    simple: 'How closely the stock’s daily ups and downs follow the market’s, from −1 to +1.',
+    technical: 'Pearson correlation of daily returns with NIFTY over the last year.',
+    read: 'Near 1 = moves with the market. Near 0 = its own story (results, sector news). Negative is rare.',
+  },
+  annualVol: {
+    title: 'Annualised volatility',
+    simple: 'How bumpy the ride has been over the past year, as a yearly %.',
+    technical: 'Standard deviation of daily returns × √252 × 100.',
+    read: '~20 % = calm large cap; 40 %+ = volatile; 60 %+ = very risky.',
+  },
+  stress: {
+    title: 'Behaviour under stress',
+    simple: 'What this stock actually did on the market’s scariest and happiest days over the last ~3 years — its real-world reaction to shocks like war news or crashes.',
+    technical: 'Average stock return on days NIFTY fell ≥ 1.5 %, rose ≥ 1.5 %, India VIX jumped ≥ 10 %, and during NIFTY < / > its 200-day SMA; plus the average next-day return.',
+    read: 'Falls less than NIFTY on shock days = defensive. Falls more = fragile / high-beta. “Stock up %” = how often it still closed green on those days.',
+  },
+  conditional: {
+    title: 'What history says',
+    simple: 'Every time in the past this stock was in the same situation as today, what happened next? Like checking a batter’s record on similar pitches.',
+    technical: 'For each past day matching the condition (same setup, RSI within ±5, 20-day breakout, RSI < 30, above 200-SMA), the forward 5 / 10 / 20-session return; reported as median and % positive, signals clustered within 3 days de-duplicated.',
+    read: '“+1.2 % · 58 %↑” = the middle outcome was +1.2 % and 58 % of cases were positive. Fewer than ~30 cases is thin evidence.',
+  },
+  winRateFwd: {
+    title: 'Win rate',
+    simple: 'How often the outcome was positive in those past cases.',
+    technical: 'Share of forward returns > 0.',
+  },
+  sentiment: {
+    title: 'News sentiment',
+    simple: 'The AI’s read of whether recent headlines are good, bad or neutral for the stock, on a −100 to +100 scale.',
+    technical: 'Model-assessed from the fetched company and sector headlines; not a market-price measure.',
+    read: 'Above +30 clearly positive; below −30 clearly negative; in between = mixed / quiet news flow.',
+  },
+  aiStance: {
+    title: 'AI stance',
+    simple: 'The AI analyst’s own Buy / Watch / Avoid after reading both the numbers and the news. It may disagree with the checklist and says why.',
+    technical: 'Generated by Claude from the quantitative fact sheet plus headlines; not a back-tested signal.',
+  },
+  macroExposure: {
+    title: 'Geopolitical & macro exposure',
+    simple: 'Which big-world forces move this stock — oil prices and Middle-East conflict, US interest rates and the dollar, tariffs, sanctions, new technology, elections and budgets.',
+    technical: 'AI narrative tying each force to the direction of impact and to evidence in the headlines or the stress statistics.',
+    read: 'Use it to ask “what could go wrong that has nothing to do with the chart?”',
+  },
 }
 
 export const g = (k: string): GlossaryEntry | undefined => GLOSSARY[k]

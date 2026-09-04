@@ -86,7 +86,8 @@ const toneText: Record<Tone, string> = {
 export function InfoTip({ term, title, text, read, className }: { term?: string; title?: string; text?: string; read?: string; className?: string }) {
   const entry = term ? GLOSSARY[term] : undefined
   const t = title ?? entry?.title
-  const body = text ?? entry?.text
+  const simple = entry?.simple
+  const body = text ?? entry?.technical
   const how = read ?? entry?.read
   const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null)
   const btn = useRef<HTMLButtonElement>(null)
@@ -123,9 +124,23 @@ export function InfoTip({ term, title, text, read, className }: { term?: string;
             style={{ left: pos.x, top: pos.y, transform: pos.above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
             className="pointer-events-none fixed z-[1000] w-80 rounded-lg border border-ink-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-ink-700 shadow-xl"
           >
-            {t && <span className="mb-1 block font-semibold text-ink-900">{t}</span>}
-            <span className="block">{body}</span>
-            {how && <span className="mt-1.5 block border-t border-ink-100 pt-1.5 text-ink-500">How to read it: {how}</span>}
+            {t && <span className="mb-1.5 block text-[13px] font-semibold text-ink-900">{t}</span>}
+            {simple && (
+              <span className="mb-2 block rounded-md bg-brand-50 px-2 py-1.5 text-[12px] leading-relaxed text-brand-700">
+                <span className="font-semibold">In simple words: </span>
+                {simple}
+              </span>
+            )}
+            <span className="block text-ink-600">
+              {simple && <span className="font-semibold text-ink-700">Technically: </span>}
+              {body}
+            </span>
+            {how && (
+              <span className="mt-2 block border-t border-ink-100 pt-2 text-ink-700">
+                <span className="font-semibold">How to read it: </span>
+                {how}
+              </span>
+            )}
           </span>,
           document.body,
         )}
