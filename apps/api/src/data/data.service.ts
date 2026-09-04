@@ -51,7 +51,26 @@ export class DataService {
         });
       }
     }
-    await this.writeLog(new Date().toISOString().slice(0, 10), 'universe', 'OK', members.length, `${members.length} Nifty 500 members mapped`);
+    // Company names for every listed equity (Nifty 500 list only covers 500 of ~2,000)
+    let named = 0;
+    try {
+      const master = await this.provider.fetchSymbolMaster();
+      if (master.length) {
+        const existing = new Map((await this.stocks.find({ select: { symbol: true, name: true, isin: true } })).map((s) => [s.symbol, s]));
+        await this.ds.transaction(async (em) => {
+          for (const m of master) {
+            const cur = existing.get(m.symbol);
+            if (!cur) continue;
+            if (cur.name && cur.isin) continue;
+            await em.update(StockEntity, { symbol: m.symbol }, { name: cur.name ?? m.name, isin: cur.isin ?? m.isin });
+            named++;
+          }
+        });
+      }
+    } catch (err) {
+      this.log.warn(`symbol master sync failed: ${(err as Error).message}`);
+    }
+    await this.writeLog(new Date().toISOString().slice(0, 10), 'universe', 'OK', members.length, `${members.length} Nifty 500 members mapped; ${named} company names filled from the NSE equity master`);
     return members.length;
   }
 

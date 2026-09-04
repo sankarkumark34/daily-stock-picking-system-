@@ -1,11 +1,12 @@
 import type { AnalystVerdict, CheckStatus, ChecklistItem, NewsItem, StockAnalysisDto } from '@nse/shared'
 import clsx from 'clsx'
-import { ExternalLink, Search, Sparkles } from 'lucide-react'
+import { ExternalLink, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { Badge, Button, Callout, Card, EmptyState, PageHeader, ProgressBar, Skeleton, StatTile, fadeUp, staggerList } from '../components/ui'
-import { useAiNote, useAskAnalyst, useStockAnalysis, useStockSearch } from '../lib/api'
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router'
+import { Badge, Button, Callout, Card, PageHeader, ProgressBar, Skeleton, StatTile, fadeUp, staggerList } from '../components/ui'
+import { useAiNote, useAskAnalyst, useStockAnalysis } from '../lib/api'
+import { StockSearch, rememberSymbol } from '../components/StockSearch'
 import { dateLong, fmt, inr, pct, regimeLabel, regimeTone, setupLabel, setupTone, timeAgo, type Tone } from '../lib/format'
 import { PicksTable } from './PicksPage'
 
@@ -17,16 +18,22 @@ const signCls = (v: number | null | undefined) => (v === null || v === undefined
 export function AnalystPage() {
   const { symbol } = useParams()
   const { data, isLoading, error } = useStockAnalysis(symbol)
+  useEffect(() => {
+    if (symbol) rememberSymbol(symbol.toUpperCase())
+  }, [symbol])
 
   return (
     <>
       <PageHeader
         title="Stock Analyst"
         description="Search any NSE stock. The analyst runs a full checklist on its history, shows how it behaves under market stress, what similar setups did before, recent company and macro news, and (with Claude credentials) an AI note on news and geopolitical impact."
-        actions={<SymbolPicker current={symbol} />}
+        actions={symbol ? <StockSearch className="sm:w-96" placeholder={`Analysing ${symbol} — search another…`} /> : undefined}
       />
       {!symbol && (
-        <EmptyState title="Pick a stock to analyse" body="Type a symbol or company name above — e.g. RELIANCE, ONGC, INFY, HDFCBANK." />
+        <div className="mx-auto max-w-2xl py-10">
+          <StockSearch size="lg" autoFocus />
+          <p className="mt-3 text-center text-sm text-ink-500">Start typing a symbol or any word of the company name — suggestions appear as you type. Recently analysed stocks and today’s picks show up before you type.</p>
+        </div>
       )}
       {symbol && error && <Callout tone="danger">{(error as Error).message}</Callout>}
       {symbol && isLoading && (
@@ -39,59 +46,6 @@ export function AnalystPage() {
       )}
       {data && <Analysis a={data} />}
     </>
-  )
-}
-
-function SymbolPicker({ current }: { current?: string }) {
-  const [q, setQ] = useState('')
-  const [open, setOpen] = useState(false)
-  const { data } = useStockSearch(q)
-  const nav = useNavigate()
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false)
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [])
-  const go = (s: string) => {
-    setOpen(false)
-    setQ('')
-    nav(`/analyst/${s}`)
-  }
-  return (
-    <div ref={ref} className="relative w-full sm:w-96">
-      <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" />
-      <input
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value.toUpperCase())
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && q.trim()) go(data?.[0]?.symbol ?? q.trim())
-          if (e.key === 'Escape') setOpen(false)
-        }}
-        placeholder={current ? `Analysing ${current} — search another…` : 'Search symbol or company…'}
-        aria-label="Search stock to analyse"
-        className="h-9 w-full rounded-lg border border-ink-200 bg-white pl-8 pr-3 text-sm placeholder:text-ink-400 focus:border-brand-500"
-      />
-      {open && q && data && data.length > 0 && (
-        <ul className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-ink-200 bg-white py-1 shadow-lg" role="listbox">
-          {data.map((s) => (
-            <li key={s.symbol}>
-              <button onClick={() => go(s.symbol)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50" role="option" aria-selected={false}>
-                <span>
-                  <span className="font-semibold text-ink-900">{s.symbol}</span>
-                  <span className="ml-2 text-ink-500">{s.name ?? ''}</span>
-                </span>
-                <span className="text-[11px] text-ink-400">{s.sector}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }
 

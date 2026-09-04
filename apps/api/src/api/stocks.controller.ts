@@ -2,7 +2,7 @@ import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { StockDetailDto } from '@nse/shared';
-import { ILike, IsNull, Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { PredictionEntity } from '../database/entities/prediction.entity.js';
 import { StockEntity } from '../database/entities/stock.entity.js';
 import { MarketStoreService } from '../engine/market-store.service.js';
@@ -23,15 +23,38 @@ export class StocksController {
   ) {}
 
   @Get('search')
-  async search(@Query('q') q = ''): Promise<{ symbol: string; name: string | null; sector: string }[]> {
-    const term = q.trim();
-    if (!term) return [];
-    const rows = await this.stocks.find({
-      where: [{ symbol: ILike(`${term}%`) }, { name: ILike(`%${term}%`) }],
-      take: 15,
-      order: { inNifty500: 'DESC', symbol: 'ASC' },
-    });
-    return rows.map((r) => ({ symbol: r.symbol, name: r.name, sector: r.sector }));
+  @ApiOperation({ summary: 'Autocomplete: every token must match the symbol (prefix) or company name (anywhere); only actively traded symbols' })
+  async search(@Query('q') q = ''): Promise<{ symbol: string; name: string | null; sector: string; nifty500: boolean }[]> {
+    const tokens = q
+      .toLowerCase()
+      .split(/[\s,.\-&()]+/)
+      .filter(Boolean)
+      .slice(0, 4);
+    if (!tokens.length) return [];
+    const latest = await this.store.latestDate();
+    const qb = this.stocks.createQueryBuilder('s');
+    if (latest) qb.where('s.lastDate >= :cutoff', { cutoff: shiftDate(latest, -20) });
+    tokens.forEach((t, i) => qb.andWhere(`(LOWER(s.symbol) LIKE :p${i} OR LOWER(COALESCE(s.name, '')) LIKE :c${i})`, { [`p${i}`]: `${t}%`, [`c${i}`]: `%${t}%` }));
+    const rows = await qb.take(60).getMany();
+    const first = tokens[0];
+    const whole = tokens.join(' ');
+    const rank = (r: StockEntity) => {
+      const sym = r.symbol.toLowerCase();
+      const name = (r.name ?? '').toLowerCase();
+      let score = 0;
+      if (sym === whole) score += 1000;
+      else if (sym.startsWith(first)) score += 400 - sym.length;
+      if (name.startsWith(whole)) score += 300;
+      else if (name.split(/\s+/).some((w) => w.startsWith(first))) score += 150;
+      if (r.inNifty500) score += 200;
+      if (r.name) score += 50;
+      if (/ETF|BEES|IETF|GOLD|LIQUID|NIFTY|SENSEX|INDEX|FUND/i.test(`${r.symbol} ${r.name ?? ''}`)) score -= 250;
+      return score;
+    };
+    return rows
+      .sort((a, b) => rank(b) - rank(a) || a.symbol.localeCompare(b.symbol))
+      .slice(0, 12)
+      .map((r) => ({ symbol: r.symbol, name: r.name, sector: r.sector, nifty500: r.inNifty500 }));
   }
 
   @Get(':symbol')

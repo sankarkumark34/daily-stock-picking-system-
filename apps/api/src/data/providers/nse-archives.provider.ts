@@ -9,6 +9,7 @@ import type {
   RawDelivery,
   RawEquityBar,
   RawIndexBar,
+  SymbolMasterRow,
   UniverseMember,
 } from './market-data.provider.js';
 
@@ -251,6 +252,36 @@ export class NseArchivesProvider implements MarketDataProvider {
       });
     }
     return map;
+  }
+
+  async fetchSymbolMaster(): Promise<SymbolMasterRow[]> {
+    const p = this.cachePath('universe', 'equity_l.csv');
+    const stale = !fs.existsSync(p) || Date.now() - fs.statSync(p).mtimeMs > 7 * 86_400_000;
+    let text: string | null = null;
+    if (stale) {
+      try {
+        const buf = await this.download('https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv');
+        if (buf) {
+          text = buf.toString('utf8');
+          fs.writeFileSync(p, text);
+        }
+      } catch (err) {
+        this.log.warn(`symbol master download failed: ${(err as Error).message}`);
+      }
+    }
+    if (!text) {
+      if (!fs.existsSync(p)) return [];
+      text = fs.readFileSync(p, 'utf8');
+    }
+    const rows = parse(text, { columns: (h: string[]) => h.map((c) => c.trim()), skip_empty_lines: true, relax_column_count: true, bom: true, trim: true }) as Record<string, string>[];
+    return rows
+      .filter((r) => r.SYMBOL && r['NAME OF COMPANY'])
+      .map((r) => ({
+        symbol: r.SYMBOL.trim(),
+        name: r['NAME OF COMPANY'].trim(),
+        isin: r['ISIN NUMBER']?.trim() || null,
+        listingDate: r['DATE OF LISTING']?.trim() || null,
+      }));
   }
 
   async fetchUniverse(): Promise<UniverseMember[]> {

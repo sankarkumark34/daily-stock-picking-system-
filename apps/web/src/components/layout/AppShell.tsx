@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Search, Sparkles } from 'lucide-react'
+import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
-import { useDataStatus, useMarketOverview, useStockSearch } from '../../lib/api'
+import { NavLink, Outlet, useLocation } from 'react-router'
+import { useDataStatus, useMarketOverview } from '../../lib/api'
+import { StockSearch } from '../StockSearch'
 import { dateShort, regimeLabel, regimeTone } from '../../lib/format'
 import { Badge } from '../ui'
 
@@ -81,7 +81,9 @@ function TopBar() {
           ))}
         </nav>
       </div>
-      <SymbolSearch />
+      <div className="hidden w-full max-w-sm sm:block">
+        <StockSearch placeholder="Search symbol or company…" />
+      </div>
       <div className="flex items-center gap-3 text-sm">
         {overview ? (
           <>
@@ -104,69 +106,6 @@ function TopBar() {
         )}
       </div>
     </header>
-  )
-}
-
-function SymbolSearch() {
-  const [q, setQ] = useState('')
-  const [open, setOpen] = useState(false)
-  const { data } = useStockSearch(q)
-  const nav = useNavigate()
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
-  }, [])
-  const go = (symbol: string) => {
-    setOpen(false)
-    setQ('')
-    nav(`/stocks/${symbol}`)
-  }
-  return (
-    <div ref={ref} className="relative hidden w-full max-w-sm sm:block">
-      <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" />
-      <input
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value.toUpperCase())
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && q.trim()) go(data?.[0]?.symbol ?? q.trim())
-          if (e.key === 'Escape') setOpen(false)
-        }}
-        placeholder="Search symbol or company…"
-        aria-label="Search stocks"
-        className="h-9 w-full rounded-lg border border-ink-200 bg-ink-50 pl-8 pr-3 text-sm placeholder:text-ink-400 focus:border-brand-500 focus:bg-white"
-      />
-      <AnimatePresence>
-        {open && q && data && data.length > 0 && (
-          <motion.ul
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-ink-200 bg-white py-1 shadow-lg"
-            role="listbox"
-          >
-            {data.map((s) => (
-              <li key={s.symbol}>
-                <button onClick={() => go(s.symbol)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50" role="option" aria-selected={false}>
-                  <span>
-                    <span className="font-semibold text-ink-900">{s.symbol}</span>
-                    <span className="ml-2 text-ink-500">{s.name ?? ''}</span>
-                  </span>
-                  <span className="text-[11px] text-ink-400">{s.sector}</span>
-                </button>
-              </li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
   )
 }
 

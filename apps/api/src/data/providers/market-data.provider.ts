@@ -63,6 +63,13 @@ export interface FundamentalsSnapshot {
   institutionalHolding: number | null;
 }
 
+export interface SymbolMasterRow {
+  symbol: string;
+  name: string;
+  isin: string | null;
+  listingDate: string | null;
+}
+
 export interface MarketDataProvider {
   readonly name: string;
   /** Empty array means "no data for that date" (holiday / not yet published). */
@@ -70,6 +77,8 @@ export interface MarketDataProvider {
   fetchIndexBars(date: string): Promise<RawIndexBar[]>;
   fetchDelivery(date: string): Promise<Map<string, RawDelivery>>;
   fetchUniverse(): Promise<UniverseMember[]>;
+  /** Full list of listed equities with company names (for search / display). */
+  fetchSymbolMaster(): Promise<SymbolMasterRow[]>;
 }
 
 export interface FundamentalsProvider {

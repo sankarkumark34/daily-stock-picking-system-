@@ -102,7 +102,8 @@ export const useStockSearch = (q: string) =>
   useQuery({
     queryKey: ['stock-search', q],
     enabled: q.trim().length >= 1,
-    queryFn: () => api.get<{ symbol: string; name: string | null; sector: string }[]>(`/stocks/search${qs({ q })}`),
+    staleTime: 5 * 60_000,
+    queryFn: () => api.get<{ symbol: string; name: string | null; sector: string; nifty500: boolean }[]>(`/stocks/search${qs({ q })}`),
   })
 
 export const useStockAnalysis = (symbol: string | undefined) =>
