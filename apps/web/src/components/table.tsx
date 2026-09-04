@@ -92,17 +92,18 @@ export function SortTh({ k, sort, children, className, align = 'left', tip }: { 
   const active = sort.key === k
   return (
     <th className={clsx(align === 'right' && 'text-right', className)} aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button
-        type="button"
-        onClick={() => sort.toggle(k)}
-        className={clsx('inline-flex items-center gap-1 uppercase tracking-wide hover:text-brand-700', active ? 'text-brand-700' : 'text-ink-500', align === 'right' && 'flex-row-reverse')}
-      >
-        <span className="inline-flex items-center gap-1">
+      <span className={clsx('inline-flex items-center gap-1', align === 'right' && 'flex-row-reverse')}>
+        <button
+          type="button"
+          onClick={() => sort.toggle(k)}
+          title={`Sort by ${typeof children === 'string' ? children : k}`}
+          className={clsx('inline-flex items-center gap-1 uppercase tracking-wide hover:text-brand-700', active ? 'text-brand-700' : 'text-ink-500', align === 'right' && 'flex-row-reverse')}
+        >
           {children}
-          {tip && <InfoTip term={tip} />}
-        </span>
-        {active ? sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUpDown size={12} className="opacity-40" />}
-      </button>
+          {active ? sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : <ArrowUpDown size={12} className="opacity-40" />}
+        </button>
+        {tip && <InfoTip term={tip} />}
+      </span>
     </th>
   )
 }
