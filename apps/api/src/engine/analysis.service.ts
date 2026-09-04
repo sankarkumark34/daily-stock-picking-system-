@@ -17,7 +17,9 @@ export interface AnalyzeOptions {
   maxPerSector: number;
   weights: FactorWeights;
   costs: TradingCostConfig;
-  minAvgTurnoverCr: number;
+  minTurnoverDay: number;
+  minTurnoverWeek: number;
+  minTurnoverMonth: number;
   minPrice: number;
   minHistoryBars: number;
 }
@@ -77,7 +79,6 @@ export class AnalysisService {
     const vixIdx = new Map<string, number>();
     data.vix?.dates.forEach((d, i) => vixIdx.set(d, i));
 
-    const minTurnover = opts.minAvgTurnoverCr * 1e7;
     let done = 0;
     for (let c = 0; c < dates.length; c += CHUNK_DATES) {
       const chunk = dates.slice(c, c + CHUNK_DATES);
@@ -98,7 +99,7 @@ export class AnalysisService {
           if (!bucket) continue;
           if (i + 1 < opts.minHistoryBars) continue;
           if (s.close[i] < opts.minPrice) continue;
-          if (!(f.avgTurnover20[i] >= minTurnover)) continue;
+          if (!(s.turnover[i] >= opts.minTurnoverDay && f.turnover5[i] >= opts.minTurnoverWeek && f.turnover21[i] >= opts.minTurnoverMonth)) continue;
           bucket.push(snapshotAt(s, f, i));
         }
       }

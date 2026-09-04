@@ -537,6 +537,16 @@ export interface StockAnalysisDto {
   };
   stress: StressStat[];
   conditional: ConditionalStat[];
+  /** Traded value (₹) today / last 5 sessions / last 21 sessions vs the configured floors. */
+  liquidity: {
+    day: number;
+    week: number;
+    month: number;
+    minDay: number;
+    minWeek: number;
+    minMonth: number;
+    pass: boolean;
+  };
   setup: SetupType;
   levels: { entry: number; target: number; stopLoss: number; riskReward: number; riskPct: number; rewardPct: number; holdDays: number } | null;
   factors: FactorScore[];

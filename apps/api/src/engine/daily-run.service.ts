@@ -42,7 +42,9 @@ export class DailyRunService {
       maxPerSector: m.maxPerSector,
       weights: DEFAULT_FACTOR_WEIGHTS,
       costs: DEFAULT_TRADING_COSTS,
-      minAvgTurnoverCr: m.minAvgTurnoverCr,
+      minTurnoverDay: m.minTurnoverDay,
+      minTurnoverWeek: m.minTurnoverWeek,
+      minTurnoverMonth: m.minTurnoverMonth,
       minPrice: m.minPrice,
       minHistoryBars: m.minHistoryBars,
     };

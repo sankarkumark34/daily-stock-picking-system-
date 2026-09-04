@@ -1,4 +1,4 @@
-# NSE Picks — Daily Quantitative Stock-Selection System
+ /  / # NSE Picks — Daily Quantitative Stock-Selection System
 
 A programmatic, backtested NSE stock-picking system. Every trading day after the close it ingests NSE end-of-day data, classifies the market regime, ranks sectors, detects setups, scores every liquid stock on ten factors and outputs **at most 10** long ideas with entry, target, stop-loss, risk/reward, holding period, confidence and the reasons. Every prediction is stored permanently and resolved against the bars that follow, so the model's real hit rate is always visible — and a walk-forward backtester answers the underlying question honestly: *is there a repeatable edge, and does "6–7 of 10" actually happen?*
 
@@ -74,7 +74,7 @@ Base URL `http://localhost:4000/api` — Swagger at `/docs`.
 
 ## Configuration (`.env`)
 
-See `.env.example`. Key knobs: `PORT`, `DB_TYPE`, `DATABASE_URL`, `SQLITE_PATH`, `DAILY_RUN_CRON`, `SCHEDULER_ENABLED`, `MODEL_MIN_SCORE`, `MODEL_MAX_PICKS`, `MODEL_MAX_PER_SECTOR`, `MODEL_MIN_TURNOVER_CR`, `MODEL_MIN_PRICE`.
+See `.env.example`. Key knobs: `PORT`, `DB_TYPE`, `DATABASE_URL`, `SQLITE_PATH`, `DAILY_RUN_CRON`, `SCHEDULER_ENABLED`, `MODEL_MIN_SCORE`, `MODEL_MAX_PICKS`, `MODEL_MAX_PER_SECTOR`, `MODEL_MIN_TURNOVER_DAY` / `MODEL_MIN_TURNOVER_WEEK` / `MODEL_MIN_TURNOVER_MONTH` (traded-value floors in rupees: today ≥ ₹1 L, last 5 sessions ≥ ₹10 L, last 21 sessions ≥ ₹1 Cr by default), `MODEL_MIN_PRICE`.
 
 ## Results so far
 

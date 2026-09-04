@@ -145,6 +145,15 @@ export class AnalystService {
       risk,
       stress,
       conditional,
+      liquidity: {
+        day: Math.round(snap.turnover),
+        week: Math.round(snap.turnover5),
+        month: Math.round(snap.turnover21),
+        minDay: this.cfg.model.minTurnoverDay,
+        minWeek: this.cfg.model.minTurnoverWeek,
+        minMonth: this.cfg.model.minTurnoverMonth,
+        pass: snap.turnover >= this.cfg.model.minTurnoverDay && snap.turnover5 >= this.cfg.model.minTurnoverWeek && snap.turnover21 >= this.cfg.model.minTurnoverMonth,
+      },
       setup: det.setup,
       levels: levels
         ? { entry: levels.entry, target: levels.target, stopLoss: levels.stopLoss, riskReward: levels.riskReward, riskPct: levels.riskPct, rewardPct: levels.rewardPct, holdDays: levels.holdDays }
@@ -458,8 +467,23 @@ export class AnalystService {
     add('regime', 'Market', 'Market regime supportive for longs', !reg ? 'NA' : reg === 'STRONG_BULLISH' || reg === 'BULLISH' ? 'PASS' : reg === 'SIDEWAYS' ? 'WARN' : 'FAIL', reg ? reg.replace('_', ' ').toLowerCase() : '–', reg ? `Market regime is ${reg.replace('_', ' ').toLowerCase()} (score ${overview!.regimeScore.toFixed(0)}/100).` : 'Run the daily pipeline for regime context.');
 
     // Liquidity & risk
-    const t = risk.avgTurnoverCr;
-    add('liquidity', 'Liquidity', 'Liquid enough (≥ ₹5 Cr/day)', t === null ? 'NA' : t >= 5 ? 'PASS' : t >= 1 ? 'WARN' : 'FAIL', t === null ? '–' : `₹${t.toFixed(1)} Cr`, t === null ? '' : t >= 5 ? 'Comfortable liquidity for retail-size orders.' : 'Thin liquidity — slippage risk.', true);
+    const m = this.cfg.model;
+    const inr = (v: number) => (v >= 1e7 ? `₹${(v / 1e7).toFixed(2)} Cr` : v >= 1e5 ? `₹${(v / 1e5).toFixed(1)} L` : `₹${Math.round(v).toLocaleString('en-IN')}`);
+    const dayOk = s.turnover >= m.minTurnoverDay;
+    const weekOk = s.turnover5 >= m.minTurnoverWeek;
+    const monthOk = s.turnover21 >= m.minTurnoverMonth;
+    const okCount = [dayOk, weekOk, monthOk].filter(Boolean).length;
+    add(
+      'liquidity',
+      'Liquidity',
+      `Traded value ≥ ${inr(m.minTurnoverDay)} today, ≥ ${inr(m.minTurnoverWeek)} / 5 sessions, ≥ ${inr(m.minTurnoverMonth)} / 21 sessions`,
+      okCount === 3 ? 'PASS' : okCount === 2 ? 'WARN' : 'FAIL',
+      `${inr(s.turnover)} · ${inr(s.turnover5)} · ${inr(s.turnover21)}`,
+      okCount === 3
+        ? 'All three traded-value floors met — enough participation to enter and exit.'
+        : `Fails ${[!dayOk && 'today', !weekOk && '5-session', !monthOk && '21-session'].filter(Boolean).join(', ')} floor — thin liquidity, slippage risk.`,
+      true,
+    );
     add('setup', 'Risk', 'A defined setup is present', setup === 'NONE' ? 'FAIL' : 'PASS', setup === 'NONE' ? 'none' : setup.replace('_', ' ').toLowerCase(), setup === 'NONE' ? 'No breakout / pullback / trend-continuation / reversal pattern today — no clear trigger.' : `${setup.replace('_', ' ').toLowerCase()} pattern detected today.`);
     add('rr', 'Risk', 'Risk / reward ≥ 1.5', !levels ? 'NA' : levels.riskReward >= 1.5 ? 'PASS' : levels.riskReward >= 1.2 ? 'WARN' : 'FAIL', levels ? `${levels.riskReward.toFixed(2)}:1` : '–', levels ? `Target ₹${levels.target} (+${levels.rewardPct}%) vs stop ₹${levels.stopLoss} (−${levels.riskPct}%).` : 'No setup, so no trade plan is computed.');
     add('drawdown', 'Risk', '1-year max drawdown better than −35%', risk.maxDrawdown1yPct === null ? 'NA' : risk.maxDrawdown1yPct > -35 ? 'PASS' : risk.maxDrawdown1yPct > -50 ? 'WARN' : 'FAIL', risk.maxDrawdown1yPct === null ? '–' : pct(risk.maxDrawdown1yPct), risk.maxDrawdown1yPct === null ? '' : `Worst peak-to-trough fall in the last year: ${pct(risk.maxDrawdown1yPct)}.`);

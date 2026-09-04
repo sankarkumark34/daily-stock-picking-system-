@@ -58,6 +58,8 @@ export const FEATURE_KEYS = [
   'high252',
   'low252',
   'avgTurnover20',
+  'turnover5',
+  'turnover21',
   'avgDeliveryPct20',
   'maxDistEma21_10',
   'minRsi5',

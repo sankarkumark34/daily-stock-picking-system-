@@ -53,6 +53,8 @@ export function computeFeatures(s: SymbolSeries): FeatureSeries {
   const high252 = rollingMax(high, 252);
   const low252 = rollingMin(low, 252);
   const avgTurnover20 = priorSma(turnover, 20);
+  const turnover5 = rollingSum(turnover, 5);
+  const turnover21 = rollingSum(turnover, 21);
   const avgDeliveryPct20 = nanMean(s.deliveryPct, 20);
 
   const f = {} as FeatureSeries;
@@ -84,6 +86,8 @@ export function computeFeatures(s: SymbolSeries): FeatureSeries {
   f.high252 = high252;
   f.low252 = low252;
   f.avgTurnover20 = avgTurnover20;
+  f.turnover5 = turnover5;
+  f.turnover21 = turnover21;
   f.avgDeliveryPct20 = avgDeliveryPct20;
 
   for (let i = 0; i < n; i++) {
@@ -134,6 +138,18 @@ export function computeFeatures(s: SymbolSeries): FeatureSeries {
     }
   }
   return f;
+}
+
+/** Sum of the last n values including the current bar (window clipped at the start). */
+function rollingSum(src: Float64Array, n: number): Float64Array {
+  const out = new Float64Array(src.length);
+  let sum = 0;
+  for (let i = 0; i < src.length; i++) {
+    sum += src[i];
+    if (i >= n) sum -= src[i - n];
+    out[i] = sum;
+  }
+  return out;
 }
 
 export function snapshotAt(s: SymbolSeries, f: FeatureSeries, i: number): StockSnapshot {

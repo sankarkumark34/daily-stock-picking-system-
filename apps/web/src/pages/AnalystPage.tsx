@@ -135,6 +135,19 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
         </div>
       </motion.div>
 
+      {/* Liquidity floors */}
+      <Card
+        title="Traded value (purchase value) filter"
+        subtitle="Minimum turnover the daily model demands before a stock can be picked"
+        action={<Badge tone={a.liquidity.pass ? 'success' : 'danger'} size="md">{a.liquidity.pass ? 'Passes all 3 floors' : 'Fails a floor'}</Badge>}
+      >
+        <motion.div variants={staggerList} initial="hidden" animate="show" className="grid gap-3 sm:grid-cols-3">
+          <LiquidityTile label="Today" value={a.liquidity.day} min={a.liquidity.minDay} />
+          <LiquidityTile label="Last 5 sessions (week)" value={a.liquidity.week} min={a.liquidity.minWeek} />
+          <LiquidityTile label="Last 21 sessions (month)" value={a.liquidity.month} min={a.liquidity.minMonth} />
+        </motion.div>
+      </Card>
+
       {/* Positives / negatives */}
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="What supports buying" subtitle={`${a.positives.length} checks passed`}>
@@ -473,6 +486,23 @@ function AiSection({ a }: { a: StockAnalysisDto }) {
         </form>
       )}
     </Card>
+  )
+}
+
+const inrCompact = (v: number) => (v >= 1e7 ? `₹${(v / 1e7).toFixed(2)} Cr` : v >= 1e5 ? `₹${(v / 1e5).toFixed(1)} L` : `₹${Math.round(v).toLocaleString('en-IN')}`)
+
+function LiquidityTile({ label, value, min }: { label: string; value: number; min: number }) {
+  const ok = value >= min
+  const ratio = min > 0 ? value / min : 0
+  return (
+    <motion.div variants={fadeUp} className={clsx('rounded-xl border p-4', ok ? 'border-up-100 bg-up-50/40' : 'border-down-100 bg-down-50/40')}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{label}</p>
+      <p className={clsx('mt-1 text-2xl font-semibold tnum', ok ? 'text-up-700' : 'text-down-700')}>{inrCompact(value)}</p>
+      <p className="mt-1 text-xs text-ink-600">
+        minimum {inrCompact(min)} · {ratio >= 1 ? `${ratio >= 100 ? Math.round(ratio) : ratio.toFixed(1)}× the floor` : `${(ratio * 100).toFixed(0)}% of the floor`}
+      </p>
+      <ProgressBar value={Math.min(100, ratio * 100)} tone={ok ? 'success' : 'danger'} className="mt-2" />
+    </motion.div>
   )
 }
 
