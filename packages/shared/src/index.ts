@@ -440,6 +440,131 @@ export interface StockDetailDto {
   history: PickDto[];
 }
 
+/* ---------------- Stock Analyst ---------------- */
+
+export type CheckStatus = 'PASS' | 'WARN' | 'FAIL' | 'NA';
+export type AnalystVerdict = 'BUY' | 'WATCH' | 'AVOID';
+
+export interface ChecklistItem {
+  id: string;
+  group: string;
+  label: string;
+  status: CheckStatus;
+  value: string;
+  detail: string;
+  /** Critical items force AVOID when they FAIL (e.g. liquidity). */
+  critical: boolean;
+}
+
+export interface HorizonReturn {
+  label: string;
+  days: number;
+  stock: number | null;
+  nifty: number | null;
+  excess: number | null;
+}
+
+export interface StressStat {
+  id: string;
+  label: string;
+  description: string;
+  days: number;
+  stockAvg: number | null;
+  niftyAvg: number | null;
+  stockUpPct: number | null;
+  nextDayStockAvg: number | null;
+}
+
+export interface ConditionalStat {
+  id: string;
+  label: string;
+  description: string;
+  occurrences: number;
+  medianFwd5: number | null;
+  winRate5: number | null;
+  medianFwd10: number | null;
+  winRate10: number | null;
+  medianFwd20: number | null;
+  winRate20: number | null;
+}
+
+export interface NewsItem {
+  title: string;
+  source: string | null;
+  url: string;
+  publishedAt: string | null;
+}
+
+export interface AiAnalystNote {
+  model: string;
+  generatedAt: string;
+  summary: string;
+  newsImpact: string;
+  macroExposure: string;
+  positives: string[];
+  negatives: string[];
+  risks: string[];
+  catalysts: string[];
+  sentiment: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+  sentimentScore: number;
+  stance: AnalystVerdict;
+  stanceReason: string;
+}
+
+export interface StockAnalysisDto {
+  symbol: string;
+  name: string | null;
+  sector: string;
+  industry: string | null;
+  asOf: string;
+  price: number;
+  changePct: number | null;
+  verdict: AnalystVerdict;
+  score: number;
+  checklist: ChecklistItem[];
+  checklistSummary: { pass: number; warn: number; fail: number; na: number };
+  positives: string[];
+  negatives: string[];
+  returns: HorizonReturn[];
+  risk: {
+    beta1y: number | null;
+    correlation1y: number | null;
+    annualVolPct: number | null;
+    maxDrawdown1yPct: number | null;
+    drawdownFrom52wHighPct: number | null;
+    atrPct: number | null;
+    avgTurnoverCr: number | null;
+  };
+  stress: StressStat[];
+  conditional: ConditionalStat[];
+  setup: SetupType;
+  levels: { entry: number; target: number; stopLoss: number; riskReward: number; riskPct: number; rewardPct: number; holdDays: number } | null;
+  factors: FactorScore[];
+  regime: MarketRegime | null;
+  sectorRank: number | null;
+  sectorScore: number | null;
+  news: NewsItem[];
+  sectorNews: NewsItem[];
+  newsError: string | null;
+  /** Whether the AI analyst endpoint is configured (credentials + enabled). */
+  aiAvailable: boolean;
+  pickHistory: PickDto[];
+  caveat: string;
+}
+
+export interface AiNoteResponseDto {
+  status: 'OK' | 'DISABLED' | 'ERROR';
+  note: AiAnalystNote | null;
+  message: string | null;
+}
+
+export interface AnalystAnswerDto {
+  question: string;
+  answer: string;
+  model: string;
+  generatedAt: string;
+}
+
 export interface DailyRunResultDto {
   date: string;
   picks: PickDto[];

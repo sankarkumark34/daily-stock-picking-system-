@@ -21,10 +21,14 @@ interface RawBarRow {
   high: number;
   low: number;
   close: number;
+  prevClose: number;
   volume: number;
   turnover: number;
   deliveryPct: number | null;
 }
+
+/** Canonical ex-date price ratios for splits / bonuses (and reverse splits). */
+const CA_RATIOS = [0.5, 1 / 3, 0.25, 0.2, 0.1, 0.05, 2 / 3, 0.75, 0.8, 0.6, 0.4, 0.125, 2, 3, 4, 5, 10];
 
 /** Loads column-oriented price history from the database into memory. */
 @Injectable()
@@ -82,7 +86,7 @@ export class MarketStoreService {
       const placeholders = slice.map((_, k) => `$${k + 3}`).join(',');
       const rows: RawBarRow[] = await this.ds.query(
         this.sql(
-          `SELECT symbol, date, open, high, low, close, volume, turnover, "deliveryPct" FROM daily_bars WHERE date >= $1 AND date <= $2 AND symbol IN (${placeholders}) ORDER BY symbol, date`,
+          `SELECT symbol, date, open, high, low, close, "prevClose", volume, turnover, "deliveryPct" FROM daily_bars WHERE date >= $1 AND date <= $2 AND symbol IN (${placeholders}) ORDER BY symbol, date`,
         ),
         [loadFrom, toDate, ...slice],
       );
@@ -148,7 +152,42 @@ export class MarketStoreService {
       s.turnover[i] = Number(r.turnover);
       s.deliveryPct[i] = r.deliveryPct === null || r.deliveryPct === undefined ? NaN : Number(r.deliveryPct);
     }
+    this.backAdjust(s, rows);
     return s;
+  }
+
+  /**
+   * Corporate-action adjustment. NSE bhavcopy reports an *adjusted* previous close
+   * on the ex-date of a split / bonus / rights issue, so when that value differs
+   * materially (>5 %) from the prior session's actual close, the ratio is the
+   * adjustment factor. Earlier prices are scaled by it and volumes inversely, so
+   * indicators and multi-year returns are continuous. Ordinary dividends (<5 %)
+   * are deliberately ignored.
+   */
+  private backAdjust(s: SymbolSeries, rows: RawBarRow[]) {
+    for (let i = 1; i < rows.length; i++) {
+      const prev = Number(rows[i].prevClose);
+      const actualPrev = s.close[i - 1];
+      if (!Number.isFinite(prev) || prev <= 0 || !Number.isFinite(actualPrev) || actualPrev <= 0) continue;
+      let ratio = prev / actualPrev; // legacy bhavcopy: adjusted previous close
+      if (Math.abs(ratio - 1) < 0.05) {
+        // UDiFF bhavcopy reports the raw previous close, so detect the ex-date gap instead:
+        // open AND close both sit near a canonical split/bonus ratio of the previous close.
+        const ro = s.open[i] / actualPrev;
+        const rc = s.close[i] / actualPrev;
+        const canon = CA_RATIOS.find((c) => Math.abs(ro / c - 1) < 0.04 && Math.abs(rc / c - 1) < 0.08);
+        if (!canon) continue;
+        ratio = canon;
+      }
+      if (ratio <= 0 || ratio > 20 || ratio < 0.02) continue;
+      for (let k = 0; k < i; k++) {
+        s.open[k] *= ratio;
+        s.high[k] *= ratio;
+        s.low[k] *= ratio;
+        s.close[k] *= ratio;
+        s.volume[k] /= ratio;
+      }
+    }
   }
 
   /** Convert $n placeholders to ? for sqlite drivers. */

@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  AiNoteResponseDto,
+  AnalystAnswerDto,
+  StockAnalysisDto,
   BacktestParams,
   BacktestRunDto,
   BacktestRunSummaryDto,
@@ -101,6 +104,21 @@ export const useStockSearch = (q: string) =>
     enabled: q.trim().length >= 1,
     queryFn: () => api.get<{ symbol: string; name: string | null; sector: string }[]>(`/stocks/search${qs({ q })}`),
   })
+
+export const useStockAnalysis = (symbol: string | undefined) =>
+  useQuery({ queryKey: ['analyst', symbol], enabled: !!symbol, staleTime: 5 * 60_000, queryFn: () => api.get<StockAnalysisDto>(`/analyst/${symbol}`) })
+
+export const useAiNote = (symbol: string | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: ['analyst', symbol, 'ai'],
+    enabled: !!symbol && enabled,
+    staleTime: 60 * 60_000,
+    retry: false,
+    queryFn: () => api.get<AiNoteResponseDto>(`/analyst/${symbol}/ai`),
+  })
+
+export const useAskAnalyst = (symbol: string | undefined) =>
+  useMutation({ mutationFn: (question: string) => api.post<AnalystAnswerDto>(`/analyst/${symbol}/ask`, { question }) })
 
 export function useInvalidate() {
   const qc = useQueryClient()

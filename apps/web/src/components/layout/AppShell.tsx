@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Search } from 'lucide-react'
+import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Search, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
@@ -10,6 +10,7 @@ import { Badge } from '../ui'
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/picks', label: 'Daily Picks', icon: ListOrdered },
+  { to: '/analyst', label: 'Stock Analyst', icon: Sparkles },
   { to: '/performance', label: 'Performance', icon: BarChart3 },
   { to: '/backtest', label: 'Backtest', icon: FlaskConical },
   { to: '/data', label: 'Data', icon: Database },

@@ -30,6 +30,11 @@ export interface AppConfig {
     minPrice: number;
     minHistoryBars: number;
   };
+  analyst: {
+    /** Claude model used for the AI analyst note and Q&A */
+    model: string;
+    enabled: boolean;
+  };
 }
 
 const bool = (v: string | undefined, d: boolean) =>
@@ -72,6 +77,10 @@ export function loadConfig(): AppConfig {
       minAvgTurnoverCr: num(e.MODEL_MIN_TURNOVER_CR, 5),
       minPrice: num(e.MODEL_MIN_PRICE, 30),
       minHistoryBars: num(e.MODEL_MIN_HISTORY_BARS, 220),
+    },
+    analyst: {
+      model: e.ANALYST_MODEL ?? 'claude-opus-5',
+      enabled: bool(e.ANALYST_AI_ENABLED, true),
     },
   };
 }

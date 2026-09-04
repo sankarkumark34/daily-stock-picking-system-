@@ -45,6 +45,20 @@ NSE archives ─▶ validate ─▶ DB ─▶ indicators ─▶ regime ─▶ se
 | Backtest | `backtest/backtest.service.ts` | Point-in-time replay, metrics (win rate, PF, expectancy, DD, Sharpe, Sortino, CAGR, daily hit-rate distribution), by regime / setup / year, anchored yearly walk-forward with optional train-only weight optimisation and a plain-English verdict. |
 | Scheduler | `scheduler/scheduler.service.ts` | Cron 18:45 IST weekdays (`DAILY_RUN_CRON`). |
 
+## Stock Analyst (single-stock deep dive)
+
+Menu **Stock Analyst** → search any NSE symbol. For that stock the API (`GET /api/analyst/:symbol`) returns:
+
+- **Checklist** — the 20 rules behind the daily model (trend, momentum, volume/delivery, volatility, structure, sector rank, market regime, liquidity, setup, risk/reward, drawdown) each marked pass / warn / fail with the value and the reason, rolled into a score and a **Buy / Watch / Avoid** verdict (critical failures such as illiquidity cap the verdict).
+- **Positives / negatives** — the passed and failed checks as plain sentences.
+- **Performance vs NIFTY** over 1w → 3y, **risk profile** (beta, correlation, annualised vol, 1-year max drawdown, distance from 52-week high, turnover).
+- **Behaviour under stress** — how the stock moved on NIFTY −1.5 % days, +1.5 % days, India VIX spikes, and during bear vs bull phases (a data-driven proxy for macro / geopolitical sensitivity).
+- **What its own history says** — median forward 5/10/20-day returns and win rate after the same setup, a similar RSI, 20-day breakouts, oversold readings, etc.
+- **News** — recent company headlines and sector/macro headlines (Google News RSS, no key).
+- **AI analyst** (`GET /api/analyst/:symbol/ai`, `POST /api/analyst/:symbol/ask`) — Claude (`claude-opus-5` by default) reads the fact sheet plus headlines and writes: news impact, geopolitical & macro exposure (crude / Middle-East conflict for oil & gas, US rates and the dollar for IT, tariffs, sanctions, tech shifts…), positives, negatives, risks, catalysts, sentiment score and its own stance. A free-text question box ("how would an Iran–US escalation affect this stock?") uses the same context. Requires `ANTHROPIC_API_KEY` (or `ant auth login`); without credentials everything else on the page still works and the AI card says so.
+
+Prices are back-adjusted for splits/bonuses using the adjusted previous close NSE publishes on the ex-date (ordinary dividends are ignored).
+
 ## API
 
 Base URL `http://localhost:4000/api` — Swagger at `/docs`.
@@ -53,6 +67,7 @@ Base URL `http://localhost:4000/api` — Swagger at `/docs`.
 - `GET /picks?date=&runId=` · `GET /picks/dates` · `GET /picks/recent` · `GET /picks/:id`
 - `GET /performance/summary?runId=`
 - `GET /stocks/search?q=` · `GET /stocks/:symbol?bars=`
+- `GET /analyst/:symbol` · `GET /analyst/:symbol/ai` · `POST /analyst/:symbol/ask {question}`
 - `GET /data/status` · `POST /data/ingest` · `POST /data/backfill` · `POST /data/universe/sync`
 - `POST /run/daily` · `POST /run/evaluate` · `GET /run/job`
 - `GET /backtest/runs` · `POST /backtest/runs` · `GET /backtest/runs/:id` · `DELETE /backtest/runs/:id` · `GET /backtest/defaults`
