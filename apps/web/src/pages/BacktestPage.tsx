@@ -6,7 +6,7 @@ import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Badge, Button, Callout, Card, EmptyState, Field, Input, PageHeader, ProgressBar, Skeleton, StatTile, Toggle, fadeUp, staggerList } from '../components/ui'
+import { Badge, Button, Callout, Card, EmptyState, Field, Input, PageHeader, ProgressBar, Skeleton, StatTile, Term, Toggle, fadeUp, staggerList } from '../components/ui'
 import { useBacktestDefaults, useBacktestRun, useBacktestRuns, useDeleteBacktest, useStartBacktest } from '../lib/api'
 import { dateShort, fmt, pct, regimeLabel, setupLabel, timeAgo } from '../lib/format'
 import { DailyOutcomesChart, GroupTable, rateTone } from './PerformancePage'
@@ -185,18 +185,18 @@ function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => voi
       </Callout>
 
       <motion.div variants={staggerList} initial="hidden" animate="show" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Picks" value={m.trades} sub={`${m.filled} filled · ${m.noFill} no-fill · ${fmt(m.avgPicksPerDay, 1)}/day`} />
-        <StatTile label="Target-hit rate" value={m.winRate === null ? '–' : `${fmt(m.winRate, 1)}%`} tone={m.winRate !== null && m.winRate >= 55 ? 'success' : 'neutral'} sub={`stop ${fmt(m.stopHitRate, 1)}% · expired ${fmt(m.expiredRate, 1)}%`} />
-        <StatTile label="Expectancy / trade" value={pct(m.expectancyPct, 2, true)} tone={(m.expectancyPct ?? 0) > 0 ? 'success' : 'danger'} sub={`avg win ${pct(m.avgWinPct, 2, true)} · avg loss ${pct(m.avgLossPct, 2)}`} />
-        <StatTile label="Profit factor" value={fmt(m.profitFactor, 2)} tone={(m.profitFactor ?? 0) >= 1.2 ? 'success' : (m.profitFactor ?? 0) >= 1 ? 'warning' : 'danger'} sub={`Sharpe ${fmt(m.sharpe, 2)} · Sortino ${fmt(m.sortino, 2)}`} />
-        <StatTile label="Avg daily hit rate" value={m.avgDailyHitRate === null ? '–' : `${fmt(m.avgDailyHitRate, 0)}%`} tone={(m.avgDailyHitRate ?? 0) >= 60 ? 'success' : 'warning'} sub={`${m.daysWith6PlusOf10} days with 6+ winners of 8–10`} />
-        <StatTile label="Max drawdown" value={pct(m.maxDrawdownPct, 1)} tone="danger" sub="fixed 1/N sizing, additive P&L" />
-        <StatTile label="CAGR (model, annualised)" value={pct(m.cagrPct, 1, true)} tone={(m.cagrPct ?? 0) > 0 ? 'success' : 'danger'} sub={`total ${pct(m.totalNetReturnPct, 1, true)}`} />
-        <StatTile label="Avg holding" value={`${fmt(m.avgHoldingDays, 1)} d`} sub={`positive-return picks ${fmt(m.directionalAccuracy, 1)}%`} />
+        <StatTile label="Picks" tip="candidates" value={m.trades} sub={`${m.filled} filled · ${m.noFill} no-fill · ${fmt(m.avgPicksPerDay, 1)}/day`} />
+        <StatTile label="Target-hit rate" tip="hitRate" value={m.winRate === null ? '–' : `${fmt(m.winRate, 1)}%`} tone={m.winRate !== null && m.winRate >= 55 ? 'success' : 'neutral'} sub={`stop ${fmt(m.stopHitRate, 1)}% · expired ${fmt(m.expiredRate, 1)}%`} />
+        <StatTile label="Expectancy / trade" tip="expectancy" value={pct(m.expectancyPct, 2, true)} tone={(m.expectancyPct ?? 0) > 0 ? 'success' : 'danger'} sub={`avg win ${pct(m.avgWinPct, 2, true)} · avg loss ${pct(m.avgLossPct, 2)}`} />
+        <StatTile label="Profit factor" tip="profitFactor" value={fmt(m.profitFactor, 2)} tone={(m.profitFactor ?? 0) >= 1.2 ? 'success' : (m.profitFactor ?? 0) >= 1 ? 'warning' : 'danger'} sub={`Sharpe ${fmt(m.sharpe, 2)} · Sortino ${fmt(m.sortino, 2)}`} />
+        <StatTile label="Avg daily hit rate" tip="daysWith6of10" value={m.avgDailyHitRate === null ? '–' : `${fmt(m.avgDailyHitRate, 0)}%`} tone={(m.avgDailyHitRate ?? 0) >= 60 ? 'success' : 'warning'} sub={`${m.daysWith6PlusOf10} days with 6+ winners of 8–10`} />
+        <StatTile label="Max drawdown" tip="maxDrawdown" value={pct(m.maxDrawdownPct, 1)} tone="danger" sub="fixed 1/N sizing, additive P&L" />
+        <StatTile label="CAGR (model, annualised)" tip="cagr" value={pct(m.cagrPct, 1, true)} tone={(m.cagrPct ?? 0) > 0 ? 'success' : 'danger'} sub={`total ${pct(m.totalNetReturnPct, 1, true)}`} />
+        <StatTile label="Avg holding" tip="holdDays" value={`${fmt(m.avgHoldingDays, 1)} d`} sub={`positive-return picks ${fmt(m.directionalAccuracy, 1)}%`} />
       </motion.div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Equity curve" subtitle="Start 100 · each pick risks 1/N of capital · net of costs">
+        <Card title={<Term k="equity">Equity curve</Term>} subtitle="Start 100 · each pick risks 1/N of capital · net of costs">
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={run.equity} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
@@ -215,7 +215,7 @@ function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => voi
             </ResponsiveContainer>
           </div>
         </Card>
-        <Card title="Rolling hit rate" subtitle="Target-hit % over trailing windows">
+        <Card title={<Term k="hitRate">Rolling hit rate</Term>} subtitle="Target-hit % over trailing windows">
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={run.rolling} margin={{ top: 4, right: 8, left: -14, bottom: 0 }}>
@@ -244,7 +244,7 @@ function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => voi
       </div>
 
       {run.walkForward.length > 0 && (
-        <Card title="Walk-forward validation" subtitle="Anchored yearly splits. The test column is the only out-of-sample number — trust that one." padded={false}>
+        <Card title={<Term k="walkForward">Walk-forward validation</Term>} subtitle="Anchored yearly splits. The test column is the only out-of-sample number — trust that one." padded={false}>
           <div className="overflow-x-auto">
             <table className="table-base">
               <thead>
@@ -290,7 +290,7 @@ function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => voi
         </Card>
       )}
       {run.diagnostics && (
-        <Card title="Pipeline diagnostics" subtitle="Why the run produced what it did">
+        <Card title={<Term k="candidates">Pipeline diagnostics</Term>} subtitle="Why the run produced what it did">
           <div className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">Universe</p>

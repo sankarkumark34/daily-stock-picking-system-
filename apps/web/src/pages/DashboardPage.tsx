@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { ArrowRight } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router'
-import { Badge, Button, Callout, Card, EmptyState, ProgressBar, Skeleton, StatTile, fadeUp, staggerList } from '../components/ui'
+import { Badge, Button, Callout, Card, EmptyState, ProgressBar, Skeleton, StatTile, Term, fadeUp, staggerList } from '../components/ui'
 import { useDataStatus, useMarketOverview, usePerformance, usePicks } from '../lib/api'
 import { dateLong, fmt, pct, regimeLabel, regimeTone } from '../lib/format'
 import { PicksTable } from './PicksPage'
@@ -65,11 +65,13 @@ export function DashboardPage() {
       <motion.div variants={staggerList} initial="hidden" animate="show" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Market regime"
+          tip="marketRegime"
           value={<Badge tone={regimeTone(overview.regime)} size="md" className="text-sm">{regimeLabel(overview.regime)}</Badge>}
           sub={`Regime score ${fmt(overview.regimeScore, 0)}/100 · long bias ×${overview.longBias}`}
         />
         <StatTile
           label="NIFTY 50"
+          tip="nifty"
           value={nifty.close.toLocaleString('en-IN')}
           tone={nifty.changePct >= 0 ? 'success' : 'danger'}
           sub={
@@ -82,12 +84,14 @@ export function DashboardPage() {
         />
         <StatTile
           label="India VIX"
+          tip="vix"
           value={overview.vix ? fmt(overview.vix.close, 2) : '–'}
           tone={overview.volatilityRegime === 'HIGH' ? 'danger' : overview.volatilityRegime === 'LOW' ? 'success' : 'neutral'}
           sub={overview.vix ? `${overview.volatilityRegime.toLowerCase()} volatility · 60d avg ${fmt(overview.vix.avg60, 1)}` : 'not available'}
         />
         <StatTile
           label="Breadth"
+          tip="breadth"
           value={`${overview.breadth.advances} / ${overview.breadth.declines}`}
           tone={overview.breadth.advanceDeclineRatio >= 1 ? 'success' : 'danger'}
           sub={`A/D ${fmt(overview.breadth.advanceDeclineRatio, 2)} · ${fmt(overview.breadth.pctAboveSma50, 0)}% above 50-SMA`}
@@ -106,10 +110,10 @@ export function DashboardPage() {
         </Card>
 
         <div className="space-y-5">
-          <Card title="Sector strength" subtitle="Equal-weighted constituents · relative to NIFTY">
+          <Card title={<Term k="sectorStrength">Sector strength</Term>} subtitle="Equal-weighted constituents · relative to NIFTY">
             <SectorList sectors={overview.sectors} />
           </Card>
-          <Card title="Model performance" subtitle="Live picks · target hit before stop">
+          <Card title={<Term k="hitRate">Model performance</Term>} subtitle="Live picks · target hit before stop">
             <div className="grid grid-cols-3 gap-3">
               {(['7 days', '30 days', '90 days'] as const).map((l) => {
                 const x = w(l)

@@ -5,7 +5,7 @@ import { ChevronDown, ExternalLink } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Badge, Callout, Card, EmptyState, FactorBar, KV, PageHeader, Select, Skeleton, fadeUp, staggerList } from '../components/ui'
+import { Badge, Callout, Card, EmptyState, FactorBar, KV, PageHeader, Select, Skeleton, Term, fadeUp, staggerList } from '../components/ui'
 import { useBacktestRuns, usePickDates, usePicks } from '../lib/api'
 import { dateLong, fmt, inr, outcomeLabel, outcomeTone, pct, regimeLabel, regimeTone, scoreTone, setupLabel, setupTone, signTone } from '../lib/format'
 
@@ -89,16 +89,16 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
           <tr>
             <th className="w-10">#</th>
             <th>Stock</th>
-            <th>Setup</th>
-            <th className="text-right">Score</th>
-            <th className="text-right">Conf.</th>
-            <th className="text-right">Entry</th>
-            <th className="text-right">Target</th>
-            <th className="text-right">Stop</th>
-            <th className="text-right">R:R</th>
-            {!compact && <th className="text-right">Hold</th>}
-            <th>Outcome</th>
-            {!compact && <th className="text-right">Net</th>}
+            <th><Term k="setup">Setup</Term></th>
+            <th className="text-right"><Term k="score">Score</Term></th>
+            <th className="text-right"><Term k="confidence">Conf.</Term></th>
+            <th className="text-right"><Term k="entry">Entry</Term></th>
+            <th className="text-right"><Term k="target">Target</Term></th>
+            <th className="text-right"><Term k="stopLoss">Stop</Term></th>
+            <th className="text-right"><Term k="riskReward">R:R</Term></th>
+            {!compact && <th className="text-right"><Term k="holdDays">Hold</Term></th>}
+            <th><Term k="outcome">Outcome</Term></th>
+            {!compact && <th className="text-right"><Term k="netReturn">Net</Term></th>}
             <th className="w-8" />
           </tr>
         </thead>
@@ -179,26 +179,26 @@ export function PickDetail({ pick: p }: { pick: PickDto }) {
       </div>
       <div>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Trade plan</h3>
-        <KV k="Entry range" v={`${inr(p.entryLow)} – ${inr(p.entryHigh)}`} />
-        <KV k="Target" v={<span className="text-up-700">{inr(p.target)} (+{fmt(p.rewardPct, 1)}%)</span>} />
-        <KV k="Stop loss" v={<span className="text-down-700">{inr(p.stopLoss)} (−{fmt(p.riskPct, 1)}%)</span>} />
-        <KV k="Risk / reward" v={`${fmt(p.riskReward, 2)} : 1`} />
-        <KV k="Expected holding" v={`${p.holdDays} sessions`} />
-        <KV k="Composite score" v={<Badge tone={scoreTone(p.score)}>{fmt(p.score, 1)} / 100</Badge>} mono={false} />
-        <KV k="Confidence" v={`${p.confidence}%`} />
+        <KV k={<Term k="entry">Entry range</Term>} v={`${inr(p.entryLow)} – ${inr(p.entryHigh)}`} />
+        <KV k={<Term k="target">Target</Term>} v={<span className="text-up-700">{inr(p.target)} (+{fmt(p.rewardPct, 1)}%)</span>} />
+        <KV k={<Term k="stopLoss">Stop loss</Term>} v={<span className="text-down-700">{inr(p.stopLoss)} (−{fmt(p.riskPct, 1)}%)</span>} />
+        <KV k={<Term k="riskReward">Risk / reward</Term>} v={`${fmt(p.riskReward, 2)} : 1`} />
+        <KV k={<Term k="holdDays">Expected holding</Term>} v={`${p.holdDays} sessions`} />
+        <KV k={<Term k="score">Composite score</Term>} v={<Badge tone={scoreTone(p.score)}>{fmt(p.score, 1)} / 100</Badge>} mono={false} />
+        <KV k={<Term k="confidence">Confidence</Term>} v={`${p.confidence}%`} />
         {p.outcome !== 'OPEN' && (
           <>
-            <KV k="Outcome" v={<Badge tone={outcomeTone(p.outcome)}>{outcomeLabel(p.outcome)}</Badge>} mono={false} />
+            <KV k={<Term k="outcome">Outcome</Term>} v={<Badge tone={outcomeTone(p.outcome)}>{outcomeLabel(p.outcome)}</Badge>} mono={false} />
             <KV k="Exit" v={`${inr(p.exitPrice)} on ${p.outcomeDate ?? '–'} (${p.daysHeld ?? '–'}d)`} />
-            <KV k="Net return" v={<span className={signTone(p.netReturnPct) === 'success' ? 'text-up-700' : 'text-down-700'}>{pct(p.netReturnPct, 2, true)}</span>} />
+            <KV k={<Term k="netReturn">Net return</Term>} v={<span className={signTone(p.netReturnPct) === 'success' ? 'text-up-700' : 'text-down-700'}>{pct(p.netReturnPct, 2, true)}</span>} />
           </>
         )}
       </div>
       <div>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Factor breakdown</h3>
+        <h3 className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-ink-500">Factor breakdown <Term k="score"> </Term></h3>
         <div className="space-y-2.5">
           {p.factors.map((f) => (
-            <FactorBar key={f.name} label={FACTOR_LABELS[f.name]} raw={f.raw} weight={f.weight} note={f.note} />
+            <FactorBar key={f.name} label={FACTOR_LABELS[f.name]} raw={f.raw} weight={f.weight} note={f.note} tip={f.name} />
           ))}
         </div>
       </div>

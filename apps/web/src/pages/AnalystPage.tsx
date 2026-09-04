@@ -4,7 +4,7 @@ import { ExternalLink, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { Badge, Button, Callout, Card, PageHeader, ProgressBar, Skeleton, StatTile, fadeUp, staggerList } from '../components/ui'
+import { Badge, Button, Callout, Card, InfoTip, PageHeader, ProgressBar, Skeleton, StatTile, Term, fadeUp, staggerList } from '../components/ui'
 import { useAiNote, useAskAnalyst, useStockAnalysis } from '../lib/api'
 import { StockSearch, rememberSymbol } from '../components/StockSearch'
 import { dateLong, fmt, inr, pct, regimeLabel, regimeTone, setupLabel, setupTone, timeAgo, type Tone } from '../lib/format'
@@ -13,6 +13,11 @@ import { PicksTable } from './PicksPage'
 const verdictTone = (v: AnalystVerdict): Tone => (v === 'BUY' ? 'success' : v === 'WATCH' ? 'warning' : 'danger')
 const verdictLabel = (v: AnalystVerdict) => (v === 'BUY' ? 'Buy / Long' : v === 'WATCH' ? 'Watch' : 'Avoid')
 const statusTone = (s: CheckStatus): Tone => (s === 'PASS' ? 'success' : s === 'WARN' ? 'warning' : s === 'FAIL' ? 'danger' : 'neutral')
+const CHECK_TIPS: Record<string, string> = {
+  'above-200': 'sma200', 'ema-stack': 'ema', adx: 'adx', 'rs-nifty': 'relativeStrength', rsi: 'rsi', macd: 'macd', ret60: 'roc',
+  relvol: 'relVol', obv: 'obv', delivery: 'delivery', atr: 'atr', 'near-high': 'dist52w', 'higher-lows': 'higherLows', 'not-extended': 'ext21',
+  sector: 'sectorStrength', regime: 'marketRegime', liquidity: 'turnover', setup: 'setup', rr: 'riskReward', drawdown: 'maxDrawdown',
+}
 const signCls = (v: number | null | undefined) => (v === null || v === undefined ? 'text-ink-400' : v > 0 ? 'text-up-700' : v < 0 ? 'text-down-700' : 'text-ink-700')
 
 export function AnalystPage() {
@@ -72,12 +77,15 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <Badge tone={verdictTone(a.verdict)} size="md" className="px-3 py-1.5 text-sm font-semibold">
-            {verdictLabel(a.verdict)}
-          </Badge>
+          <span className="inline-flex items-center gap-1.5">
+            <Badge tone={verdictTone(a.verdict)} size="md" className="px-3 py-1.5 text-sm font-semibold">
+              {verdictLabel(a.verdict)}
+            </Badge>
+            <InfoTip term="verdict" />
+          </span>
           <div className="w-56">
             <div className="mb-1 flex justify-between text-[11px] text-ink-500">
-              <span>Checklist score</span>
+              <Term k="checklistScore">Checklist score</Term>
               <span className="tnum font-medium text-ink-900">{a.score}/100</span>
             </div>
             <ProgressBar value={a.score} tone={verdictTone(a.verdict)} />
@@ -91,7 +99,7 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
 
       {/* Liquidity floors */}
       <Card
-        title="Traded value (purchase value) filter"
+        title={<Term k="turnover">Traded value (purchase value) filter</Term>}
         subtitle="Minimum turnover the daily model demands before a stock can be picked"
         action={<Badge tone={a.liquidity.pass ? 'success' : 'danger'} size="md">{a.liquidity.pass ? 'Passes all 3 floors' : 'Fails a floor'}</Badge>}
       >
@@ -116,7 +124,7 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
       <AiSection a={a} />
 
       {/* Checklist */}
-      <Card title="Stock-picking checklist" subtitle="Every rule the daily model uses, applied to this stock" padded={false}>
+      <Card title={<Term k="checklistScore">Stock-picking checklist</Term>} subtitle="Every rule the daily model uses, applied to this stock" padded={false}>
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
@@ -141,7 +149,7 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
 
       {/* Returns + risk */}
       <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
-        <Card title="Performance vs NIFTY" padded={false}>
+        <Card title={<Term k="relativeStrength">Performance vs NIFTY</Term>} padded={false}>
           <table className="table-base">
             <thead>
               <tr>
@@ -165,14 +173,14 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
         </Card>
         <Card title="Risk profile" subtitle="Trailing 1 year">
           <motion.div variants={staggerList} initial="hidden" animate="show" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile label="Beta vs NIFTY" value={fmt(a.risk.beta1y, 2)} sub={`correlation ${fmt(a.risk.correlation1y, 2)}`} tone={(a.risk.beta1y ?? 1) > 1.3 ? 'warning' : 'neutral'} />
-            <StatTile label="Annualised volatility" value={pct(a.risk.annualVolPct, 0)} sub={`ATR ${pct(a.risk.atrPct, 1)} / day`} />
-            <StatTile label="Max drawdown (1y)" value={pct(a.risk.maxDrawdown1yPct, 1)} tone="danger" sub={`now ${pct(a.risk.drawdownFrom52wHighPct, 1)} from 52w high`} />
-            <StatTile label="Avg daily turnover" value={a.risk.avgTurnoverCr === null ? '–' : `₹${fmt(a.risk.avgTurnoverCr, 1)} Cr`} sub="20-day average" />
+            <StatTile label="Beta vs NIFTY" tip="beta" value={fmt(a.risk.beta1y, 2)} sub={`correlation ${fmt(a.risk.correlation1y, 2)}`} tone={(a.risk.beta1y ?? 1) > 1.3 ? 'warning' : 'neutral'} />
+            <StatTile label="Annualised volatility" tip="annualVol" value={pct(a.risk.annualVolPct, 0)} sub={`ATR ${pct(a.risk.atrPct, 1)} / day`} />
+            <StatTile label="Max drawdown (1y)" tip="maxDrawdown" value={pct(a.risk.maxDrawdown1yPct, 1)} tone="danger" sub={`now ${pct(a.risk.drawdownFrom52wHighPct, 1)} from 52w high`} />
+            <StatTile label="Avg daily turnover" tip="turnover" value={a.risk.avgTurnoverCr === null ? '–' : `₹${fmt(a.risk.avgTurnoverCr, 1)} Cr`} sub="20-day average" />
             {a.levels ? (
               <>
-                <StatTile label="Trade plan" value={`${fmt(a.levels.riskReward, 2)} : 1`} tone="info" sub={`target ${inr(a.levels.target)} · stop ${inr(a.levels.stopLoss)}`} />
-                <StatTile label="Holding period" value={`${a.levels.holdDays} sessions`} sub={`risk −${fmt(a.levels.riskPct, 1)}% · reward +${fmt(a.levels.rewardPct, 1)}%`} />
+                <StatTile label="Trade plan" tip="riskReward" value={`${fmt(a.levels.riskReward, 2)} : 1`} tone="info" sub={`target ${inr(a.levels.target)} · stop ${inr(a.levels.stopLoss)}`} />
+                <StatTile label="Holding period" tip="holdDays" value={`${a.levels.holdDays} sessions`} sub={`risk −${fmt(a.levels.riskPct, 1)}% · reward +${fmt(a.levels.rewardPct, 1)}%`} />
               </>
             ) : (
               <StatTile label="Trade plan" value="—" sub="no setup triggered today" className="sm:col-span-2" />
@@ -183,7 +191,7 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
 
       {/* Stress + history */}
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Behaviour under market stress" subtitle="Last ~3 years · proxy for macro / geopolitical sensitivity" padded={false}>
+        <Card title={<Term k="stress">Behaviour under market stress</Term>} subtitle="Last ~3 years · proxy for macro / geopolitical sensitivity" padded={false}>
           <div className="overflow-x-auto">
             <table className="table-base">
               <thead>
@@ -221,7 +229,7 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
             </table>
           </div>
         </Card>
-        <Card title="What this stock's own history says" subtitle="Forward returns after similar conditions (median · % positive)" padded={false}>
+        <Card title={<Term k="conditional">What this stock's own history says</Term>} subtitle="Forward returns after similar conditions (median · % positive)" padded={false}>
           <div className="overflow-x-auto">
             <table className="table-base">
               <thead>
@@ -290,6 +298,7 @@ function ChecklistRow({ c, group }: { c: ChecklistItem; group: string }) {
       <td className="text-xs font-semibold uppercase tracking-wide text-ink-500">{group}</td>
       <td className="font-medium">
         {c.label}
+        {CHECK_TIPS[c.id] && <InfoTip term={CHECK_TIPS[c.id]} className="ml-1" />}
         {c.critical && <span className="ml-1 text-[10px] uppercase text-ink-400">critical</span>}
       </td>
       <td>
@@ -357,7 +366,7 @@ function AiSection({ a }: { a: StockAnalysisDto }) {
         </span>
       }
       subtitle={note ? `${note.model} · generated ${timeAgo(note.generatedAt)}` : 'Reads the headlines above plus the fact sheet and explains how news, geopolitics and macro forces bear on this stock'}
-      action={note && <Badge tone={verdictTone(note.stance)} size="md">AI stance: {verdictLabel(note.stance)}</Badge>}
+      action={note && <span className="inline-flex items-center gap-1"><Badge tone={verdictTone(note.stance)} size="md">AI stance: {verdictLabel(note.stance)}</Badge><InfoTip term="aiStance" /></span>}
     >
       {!a.aiAvailable && <Callout tone="neutral">AI analyst is disabled (ANALYST_AI_ENABLED=false).</Callout>}
       {a.aiAvailable && isLoading && (
@@ -382,7 +391,7 @@ function AiSection({ a }: { a: StockAnalysisDto }) {
           <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
             <p className="text-sm leading-relaxed text-ink-800">{note.summary}</p>
             <div className="rounded-lg border border-ink-100 bg-ink-50/60 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">News sentiment</p>
+              <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-500">News sentiment <InfoTip term="sentiment" /></p>
               <p className={clsx('mt-1 text-xl font-semibold', tone === 'success' ? 'text-up-700' : tone === 'danger' ? 'text-down-700' : 'text-warn-700')}>
                 {note.sentiment.toLowerCase()} <span className="text-sm tnum text-ink-500">({note.sentimentScore > 0 ? '+' : ''}{note.sentimentScore})</span>
               </p>
@@ -392,7 +401,7 @@ function AiSection({ a }: { a: StockAnalysisDto }) {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <Section title="Impact of recent news" body={note.newsImpact} />
-            <Section title="Geopolitical & macro exposure" body={note.macroExposure} />
+            <Section title={<Term k="macroExposure">Geopolitical & macro exposure</Term>} body={note.macroExposure} />
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <ListBox title="Positives" items={note.positives} tone="success" />
@@ -460,7 +469,7 @@ function LiquidityTile({ label, value, min }: { label: string; value: number; mi
   )
 }
 
-function Section({ title, body }: { title: string; body: string }) {
+function Section({ title, body }: { title: React.ReactNode; body: string }) {
   return (
     <div>
       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-500">{title}</h3>

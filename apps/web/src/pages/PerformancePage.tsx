@@ -2,7 +2,7 @@ import type { GroupStatsDto } from '@nse/shared'
 import clsx from 'clsx'
 import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Callout, Card, EmptyState, PageHeader, Select, Skeleton } from '../components/ui'
+import { Callout, Card, EmptyState, PageHeader, Select, Skeleton, Term } from '../components/ui'
 import { useBacktestRuns, usePerformance } from '../lib/api'
 import { dateShort, fmt, pct, regimeLabel, setupLabel } from '../lib/format'
 
@@ -54,12 +54,12 @@ export function PerformancePage() {
                     <th className="text-right">Closed</th>
                     <th className="text-right">Target hit</th>
                     <th className="text-right">Stop hit</th>
-                    <th className="text-right">Expired</th>
+                    <th className="text-right"><Term k="expired">Expired</Term></th>
                     <th className="text-right">Open</th>
-                    <th className="text-right">Hit rate</th>
-                    <th className="text-right">Positive %</th>
-                    <th className="text-right">Avg net</th>
-                    <th className="text-right">Profit factor</th>
+                    <th className="text-right"><Term k="hitRate">Hit rate</Term></th>
+                    <th className="text-right"><Term k="directionalAccuracy">Positive %</Term></th>
+                    <th className="text-right"><Term k="netReturn">Avg net</Term></th>
+                    <th className="text-right"><Term k="profitFactor">Profit factor</Term></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,10 +108,10 @@ export function GroupTable({ title, rows, labelFn }: { title: string; rows: Grou
             <tr>
               <th>Group</th>
               <th className="text-right">Trades</th>
-              <th className="text-right">Hit rate</th>
-              <th className="text-right">Positive %</th>
-              <th className="text-right">Expectancy</th>
-              <th className="text-right">Profit factor</th>
+              <th className="text-right"><Term k="hitRate">Hit rate</Term></th>
+              <th className="text-right"><Term k="directionalAccuracy">Positive %</Term></th>
+              <th className="text-right"><Term k="expectancy">Expectancy</Term></th>
+              <th className="text-right"><Term k="profitFactor">Profit factor</Term></th>
             </tr>
           </thead>
           <tbody>

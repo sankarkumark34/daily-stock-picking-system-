@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { motion } from 'motion/react'
 import { useParams } from 'react-router'
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Badge, Callout, Card, KV, Skeleton, StatTile, staggerList } from '../components/ui'
+import { Badge, Callout, Card, KV, Skeleton, StatTile, Term, staggerList } from '../components/ui'
 import { useStock } from '../lib/api'
 import { compact, dateLong, dateShort, fmt, inr, pct } from '../lib/format'
 import { PicksTable } from './PicksPage'
@@ -48,10 +48,10 @@ export function StockPage() {
       </div>
 
       <motion.div variants={staggerList} initial="hidden" animate="show" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="RSI 14" value={fmt(num('rsi14'), 1)} tone={(num('rsi14') ?? 50) > 70 ? 'warning' : (num('rsi14') ?? 50) < 30 ? 'danger' : 'neutral'} sub={`Stoch RSI ${fmt(num('stochRsi'), 0)} · MACD hist ${fmt(num('macdHist'), 2)}`} />
-        <StatTile label="ATR 14" value={`${fmt(num('atrPct'), 2)}%`} sub={`₹${fmt(num('atr14'), 2)} · HV20 ${fmt(num('hv20'), 0)}%`} />
-        <StatTile label="ADX 14" value={fmt(num('adx14'), 1)} tone={(num('adx14') ?? 0) >= 25 ? 'success' : 'neutral'} sub={`Supertrend ${num('supertrendDir') === 1 ? 'bullish' : 'bearish'}`} />
-        <StatTile label="Relative volume" value={`${fmt(num('relVol'), 2)}×`} tone={(num('relVol') ?? 1) >= 1.5 ? 'info' : 'neutral'} sub={`avg 20d turnover ₹${compact(num('avgTurnover20'))}`} />
+        <StatTile label="RSI 14" tip="rsi" value={fmt(num('rsi14'), 1)} tone={(num('rsi14') ?? 50) > 70 ? 'warning' : (num('rsi14') ?? 50) < 30 ? 'danger' : 'neutral'} sub={`Stoch RSI ${fmt(num('stochRsi'), 0)} · MACD hist ${fmt(num('macdHist'), 2)}`} />
+        <StatTile label="ATR 14" tip="atr" value={`${fmt(num('atrPct'), 2)}%`} sub={`₹${fmt(num('atr14'), 2)} · HV20 ${fmt(num('hv20'), 0)}%`} />
+        <StatTile label="ADX 14" tip="adx" value={fmt(num('adx14'), 1)} tone={(num('adx14') ?? 0) >= 25 ? 'success' : 'neutral'} sub={`Supertrend ${num('supertrendDir') === 1 ? 'bullish' : 'bearish'}`} />
+        <StatTile label="Relative volume" tip="relVol" value={`${fmt(num('relVol'), 2)}×`} tone={(num('relVol') ?? 1) >= 1.5 ? 'info' : 'neutral'} sub={`avg 20d turnover ₹${compact(num('avgTurnover20'))}`} />
       </motion.div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
@@ -88,20 +88,20 @@ export function StockPage() {
         <Card title="Latest indicator snapshot">
           <div className="grid gap-x-6 sm:grid-cols-2">
             <div>
-              <KV k="EMA 9 / 21 / 50" v={`${fmt(num('ema9'), 1)} / ${fmt(num('ema21'), 1)} / ${fmt(num('ema50'), 1)}`} />
-              <KV k="SMA 20 / 50 / 200" v={`${fmt(num('sma20'), 1)} / ${fmt(num('sma50'), 1)} / ${fmt(num('sma200'), 1)}`} />
-              <KV k="MACD line / signal" v={`${fmt(num('macdLine'), 2)} / ${fmt(num('macdSignal'), 2)}`} />
-              <KV k="ROC 10 / 20" v={`${pct(num('roc10'), 1, true)} / ${pct(num('roc20'), 1, true)}`} />
-              <KV k="CCI 20" v={fmt(num('cci20'), 0)} />
-              <KV k="Bollinger %B / width" v={`${fmt(num('bbPctB'), 2)} / ${fmt(num('bbWidth'), 1)}%`} />
+              <KV k={<Term k="ema">EMA 9 / 21 / 50</Term>} v={`${fmt(num('ema9'), 1)} / ${fmt(num('ema21'), 1)} / ${fmt(num('ema50'), 1)}`} />
+              <KV k={<Term k="sma">SMA 20 / 50 / 200</Term>} v={`${fmt(num('sma20'), 1)} / ${fmt(num('sma50'), 1)} / ${fmt(num('sma200'), 1)}`} />
+              <KV k={<Term k="macd">MACD line / signal</Term>} v={`${fmt(num('macdLine'), 2)} / ${fmt(num('macdSignal'), 2)}`} />
+              <KV k={<Term k="roc">ROC 10 / 20</Term>} v={`${pct(num('roc10'), 1, true)} / ${pct(num('roc20'), 1, true)}`} />
+              <KV k={<Term k="cci">CCI 20</Term>} v={fmt(num('cci20'), 0)} />
+              <KV k={<Term k="bollinger">Bollinger %B / width</Term>} v={`${fmt(num('bbPctB'), 2)} / ${fmt(num('bbWidth'), 1)}%`} />
             </div>
             <div>
               <KV k="Return 1d / 5d" v={`${pct(num('ret1'), 1, true)} / ${pct(num('ret5'), 1, true)}`} />
               <KV k="Return 20d / 60d" v={`${pct(num('ret20'), 1, true)} / ${pct(num('ret60'), 1, true)}`} />
               <KV k="20d high / low" v={`${fmt(num('priorHigh20'), 1)} / ${fmt(num('priorLow20'), 1)}`} />
-              <KV k="52w high / low" v={`${fmt(num('high252'), 1)} / ${fmt(num('low252'), 1)}`} />
-              <KV k="OBV slope 10d" v={fmt(num('obvSlope10'), 2)} />
-              <KV k="Delivery % (20d avg)" v={num('avgDeliveryPct20') === null ? 'n/a' : `${fmt(num('avgDeliveryPct20'), 0)}%`} />
+              <KV k={<Term k="dist52w">52w high / low</Term>} v={`${fmt(num('high252'), 1)} / ${fmt(num('low252'), 1)}`} />
+              <KV k={<Term k="obv">OBV slope 10d</Term>} v={fmt(num('obvSlope10'), 2)} />
+              <KV k={<Term k="delivery">Delivery % (20d avg)</Term>} v={num('avgDeliveryPct20') === null ? 'n/a' : `${fmt(num('avgDeliveryPct20'), 0)}%`} />
             </div>
           </div>
         </Card>

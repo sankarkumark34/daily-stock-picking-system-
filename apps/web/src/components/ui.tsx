@@ -1,7 +1,10 @@
 import clsx from 'clsx'
+import { Info } from 'lucide-react'
 import { motion } from 'motion/react'
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
+import { useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { createPortal } from 'react-dom'
 import type { Tone } from '../lib/format'
+import { GLOSSARY } from '../lib/glossary'
 
 /* ---------- motion presets ---------- */
 export const fadeUp = {
@@ -75,11 +78,79 @@ const toneText: Record<Tone, string> = {
   violet: 'text-violet-600',
 }
 
-export function StatTile({ label, value, sub, tone = 'neutral', icon, className }: { label: string; value: ReactNode; sub?: ReactNode; tone?: Tone; icon?: ReactNode; className?: string }) {
+/* ---------- glossary tooltip ---------- */
+/**
+ * Small (i) icon; hover or focus shows a plain-language explanation from the glossary.
+ * Pass `term` (glossary key) or a custom `title`/`text`.
+ */
+export function InfoTip({ term, title, text, read, className }: { term?: string; title?: string; text?: string; read?: string; className?: string }) {
+  const entry = term ? GLOSSARY[term] : undefined
+  const t = title ?? entry?.title
+  const body = text ?? entry?.text
+  const how = read ?? entry?.read
+  const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null)
+  const btn = useRef<HTMLButtonElement>(null)
+  if (!body) return null
+  const show = () => {
+    const r = btn.current?.getBoundingClientRect()
+    if (!r) return
+    const above = r.bottom + 180 > window.innerHeight
+    setPos({ x: Math.min(Math.max(r.left + r.width / 2, 160), window.innerWidth - 160), y: above ? r.top - 6 : r.bottom + 6, above })
+  }
+  const hide = () => setPos(null)
+  return (
+    <span className={clsx('inline-flex align-middle', className)}>
+      <button
+        ref={btn}
+        type="button"
+        aria-label={`What is ${t ?? 'this'}?`}
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-ink-400 hover:text-brand-600 focus:text-brand-600"
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        onClick={(e) => {
+          e.stopPropagation()
+          pos ? hide() : show()
+        }}
+      >
+        <Info size={13} />
+      </button>
+      {pos &&
+        createPortal(
+          <span
+            role="tooltip"
+            style={{ left: pos.x, top: pos.y, transform: pos.above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
+            className="pointer-events-none fixed z-[1000] w-80 rounded-lg border border-ink-200 bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-ink-700 shadow-xl"
+          >
+            {t && <span className="mb-1 block font-semibold text-ink-900">{t}</span>}
+            <span className="block">{body}</span>
+            {how && <span className="mt-1.5 block border-t border-ink-100 pt-1.5 text-ink-500">How to read it: {how}</span>}
+          </span>,
+          document.body,
+        )}
+    </span>
+  )
+}
+
+/** Label followed by an (i) tooltip for the given glossary term. */
+export function Term({ k, children, className }: { k: string; children: ReactNode; className?: string }) {
+  return (
+    <span className={clsx('inline-flex items-center gap-1', className)}>
+      {children}
+      <InfoTip term={k} />
+    </span>
+  )
+}
+
+export function StatTile({ label, value, sub, tone = 'neutral', icon, className, tip }: { label: string; value: ReactNode; sub?: ReactNode; tone?: Tone; icon?: ReactNode; className?: string; tip?: string }) {
   return (
     <motion.div variants={fadeUp} className={clsx('rounded-xl border border-ink-200 bg-white p-4 shadow-card', className)}>
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{label}</p>
+        <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+          {label}
+          {tip && <InfoTip term={tip} />}
+        </p>
         {icon && <span className="text-ink-400">{icon}</span>}
       </div>
       <p className={clsx('mt-1.5 text-2xl font-semibold tnum', toneText[tone])}>{value}</p>
@@ -216,12 +287,15 @@ export function Callout({ tone = 'info', title, children }: { tone?: Tone; title
   )
 }
 
-export function FactorBar({ label, raw, weight, note }: { label: string; raw: number; weight: number; note?: string }) {
+export function FactorBar({ label, raw, weight, note, tip }: { label: string; raw: number; weight: number; note?: string; tip?: string }) {
   const tone: Tone = raw >= 70 ? 'success' : raw >= 50 ? 'info' : raw >= 35 ? 'warning' : 'danger'
   return (
-    <div className="grid grid-cols-[140px_1fr_64px] items-center gap-3 text-xs">
+    <div className="grid grid-cols-[150px_1fr_64px] items-center gap-3 text-xs">
       <div>
-        <p className="font-medium text-ink-900">{label}</p>
+        <p className="inline-flex items-center gap-1 font-medium text-ink-900">
+          {label}
+          {tip && <InfoTip term={tip} />}
+        </p>
         <p className="text-[11px] text-ink-500">weight {weight}</p>
       </div>
       <div title={note}>
@@ -233,7 +307,7 @@ export function FactorBar({ label, raw, weight, note }: { label: string; raw: nu
   )
 }
 
-export function KV({ k, v, mono = true }: { k: string; v: ReactNode; mono?: boolean }) {
+export function KV({ k, v, mono = true }: { k: ReactNode; v: ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-ink-100 py-1.5 text-sm last:border-b-0">
       <span className="text-ink-500">{k}</span>
