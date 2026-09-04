@@ -17,6 +17,7 @@ export function PicksPage() {
   const { data, isLoading, error } = usePicks(date, runId)
   const { data: runs } = useBacktestRuns()
 
+  const sector = params.get('sector') ?? ''
   const set = (k: string, v: string | null) => {
     const next = new URLSearchParams(params)
     if (v) next.set(k, v)
@@ -24,6 +25,8 @@ export function PicksPage() {
     if (k === 'runId') next.delete('date')
     setParams(next, { replace: true })
   }
+  const sectors = [...new Set((data?.picks ?? []).map((p) => p.sector))].sort()
+  const visible = sector ? (data?.picks ?? []).filter((p) => p.sector === sector) : (data?.picks ?? [])
 
   return (
     <>
@@ -37,6 +40,14 @@ export function PicksPage() {
               {runs?.filter((r) => r.status === 'COMPLETED').map((r) => (
                 <option key={r.id} value={r.id}>
                   Backtest #{r.id} · {r.label}
+                </option>
+              ))}
+            </Select>
+            <Select value={sector} onChange={(e) => set('sector', e.target.value || null)} aria-label="Sector filter">
+              <option value="">All sectors ({data?.picks.length ?? 0})</option>
+              {sectors.map((s) => (
+                <option key={s} value={s}>
+                  {s} ({data?.picks.filter((p) => p.sector === s).length})
                 </option>
               ))}
             </Select>
@@ -58,9 +69,11 @@ export function PicksPage() {
           title="No picks for this date"
           body={runId ? 'The backtest produced no qualifying setups on this day.' : 'Either the daily pipeline has not run yet, or no stock cleared the minimum quality score. Run it from the Data page.'}
         />
+      ) : visible.length === 0 ? (
+        <EmptyState title={`No picks in ${sector}`} body="Clear the sector filter to see the full list." />
       ) : (
-        <Card padded={false}>
-          <PicksTable picks={data.picks} />
+        <Card padded={false} title={sector ? `${sector} · ${visible.length} of ${data.picks.length} picks` : undefined}>
+          <PicksTable picks={visible} />
         </Card>
       )}
     </>

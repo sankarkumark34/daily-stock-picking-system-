@@ -1,4 +1,4 @@
- /  / # NSE Picks — Daily Quantitative Stock-Selection System
+# NSE Picks — Daily Quantitative Stock-Selection System
 
 A programmatic, backtested NSE stock-picking system. Every trading day after the close it ingests NSE end-of-day data, classifies the market regime, ranks sectors, detects setups, scores every liquid stock on ten factors and outputs **at most 10** long ideas with entry, target, stop-loss, risk/reward, holding period, confidence and the reasons. Every prediction is stored permanently and resolved against the bars that follow, so the model's real hit rate is always visible — and a walk-forward backtester answers the underlying question honestly: *is there a repeatable edge, and does "6–7 of 10" actually happen?*
 
@@ -39,7 +39,7 @@ NSE archives ─▶ validate ─▶ DB ─▶ indicators ─▶ regime ─▶ se
 | Setups | `quant/setups.ts` | Breakout, Pullback, Trend Continuation, Reversal (long only). |
 | Levels | `quant/levels.ts` | Entry = close; stop = tighter of ATR stop and structural low; target = k·ATR; risk 1.5–8 %. |
 | Scoring | `quant/scoring.ts` | Ten factors × weights (defaults in `packages/shared`). Raw factor scores are weight-independent so backtests can re-weight cheaply. |
-| Selection | `engine/analysis.service.ts` | Min score 72 (calibrated to the observed 70–90 score range so weak days yield fewer picks), max 3 per sector, stricter in Strong Bearish; **never forces 10**. |
+| Selection | `engine/analysis.service.ts` | Min score 72 (calibrated to the observed 70–90 score range so weak days yield fewer picks), max 2 per sector, stricter in Strong Bearish; **never forces 10**. |
 | Outcome | `quant/outcome.ts` | Fill at next open (skip if gap > 2 %). Target first → SUCCESS, stop first → FAILURE, same bar → FAILURE (conservative), else EXPIRED at last close. |
 | Costs | `quant/costs.ts` | Brokerage, STT both legs, exchange, SEBI, stamp duty, GST, slippage — ~0.4 % round trip by default. |
 | Backtest | `backtest/backtest.service.ts` | Point-in-time replay, metrics (win rate, PF, expectancy, DD, Sharpe, Sortino, CAGR, daily hit-rate distribution), by regime / setup / year, anchored yearly walk-forward with optional train-only weight optimisation and a plain-English verdict. |

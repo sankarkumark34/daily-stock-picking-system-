@@ -76,7 +76,7 @@ export function loadConfig(): AppConfig {
       maxPicks: num(e.MODEL_MAX_PICKS, 10),
       minScore: num(e.MODEL_MIN_SCORE, 72),
       holdDays: num(e.MODEL_HOLD_DAYS, 5),
-      maxPerSector: num(e.MODEL_MAX_PER_SECTOR, 3),
+      maxPerSector: num(e.MODEL_MAX_PER_SECTOR, 2),
       minTurnoverDay: num(e.MODEL_MIN_TURNOVER_DAY, 100_000),
       minTurnoverWeek: num(e.MODEL_MIN_TURNOVER_WEEK, 1_000_000),
       minTurnoverMonth: num(e.MODEL_MIN_TURNOVER_MONTH, 10_000_000),
