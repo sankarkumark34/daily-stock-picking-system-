@@ -7,6 +7,7 @@ import { Fragment, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Callout, Card, EmptyState, FactorBar, KV, PageHeader, Select, Skeleton, Term, fadeUp, staggerList } from '../components/ui'
 import { useBacktestRuns, useLiveQuotes, usePickDates, usePicks } from '../lib/api'
+import { FilterSelect, SortTh, TableToolbar, useSortFilter } from '../components/table'
 import { LiveBadge, LiveVsPlan } from '../components/LivePrice'
 import { dateLong, fmt, inr, outcomeLabel, outcomeTone, pct, regimeLabel, regimeTone, scoreTone, setupLabel, setupTone, signTone } from '../lib/format'
 
@@ -87,35 +88,50 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
   const { data: quotes } = useLiveQuotes(openSymbols)
   const quoteOf = (s: string) => quotes?.find((q) => q.symbol === s)
   const anyQuote = quotes?.[0]
+  const live = openSymbols.length > 0
+  const t = useSortFilter(picks, {
+    defaultKey: 'rank',
+    searchText: (p) => `${p.symbol} ${p.name ?? ''} ${p.sector} ${p.setup} ${p.outcome}`,
+    filters: { outcome: (p, v) => p.outcome === v, setup: (p, v) => p.setup === v },
+  })
+  const outcomes = [...new Set(picks.map((p) => p.outcome))]
+  const setups = [...new Set(picks.map((p) => p.setup))]
   return (
+    <div>
+      {!compact && (
+        <TableToolbar query={t.query} onQuery={t.setQuery} count={t.rows.length} total={t.total} onClear={t.clear} active={t.active} placeholder="Filter by symbol, name, sector…">
+          <FilterSelect label="All outcomes" value={t.filterValues.outcome ?? ''} onChange={(v) => t.setFilter('outcome', v)} options={outcomes.map((o) => ({ value: o, label: outcomeLabel(o) }))} />
+          <FilterSelect label="All setups" value={t.filterValues.setup ?? ''} onChange={(v) => t.setFilter('setup', v)} options={setups.map((s) => ({ value: s, label: setupLabel(s) }))} />
+        </TableToolbar>
+      )}
     <div className="overflow-x-auto">
       <table className="table-base">
         <thead>
           <tr>
-            <th className="w-10">#</th>
-            <th>Stock</th>
-            {openSymbols.length > 0 && (
+            <SortTh k="rank" sort={t.sort} className="w-10">#</SortTh>
+            <SortTh k="symbol" sort={t.sort}>Stock</SortTh>
+            {live && (
               <th>
                 <span className="inline-flex items-center gap-1.5">
                   Live vs plan <LiveBadge q={anyQuote} />
                 </span>
               </th>
             )}
-            <th><Term k="setup">Setup</Term></th>
-            <th className="text-right"><Term k="score">Score</Term></th>
-            <th className="text-right"><Term k="confidence">Conf.</Term></th>
-            <th className="text-right"><Term k="entry">Entry</Term></th>
-            <th className="text-right"><Term k="target">Target</Term></th>
-            <th className="text-right"><Term k="stopLoss">Stop</Term></th>
-            <th className="text-right"><Term k="riskReward">R:R</Term></th>
-            {!compact && <th className="text-right"><Term k="holdDays">Hold</Term></th>}
-            <th><Term k="outcome">Outcome</Term></th>
-            {!compact && <th className="text-right"><Term k="netReturn">Net</Term></th>}
+            <SortTh k="setup" sort={t.sort} tip="setup">Setup</SortTh>
+            <SortTh k="score" sort={t.sort} align="right" tip="score">Score</SortTh>
+            <SortTh k="confidence" sort={t.sort} align="right" tip="confidence">Conf.</SortTh>
+            <SortTh k="entry" sort={t.sort} align="right" tip="entry">Entry</SortTh>
+            <SortTh k="target" sort={t.sort} align="right" tip="target">Target</SortTh>
+            <SortTh k="stopLoss" sort={t.sort} align="right" tip="stopLoss">Stop</SortTh>
+            <SortTh k="riskReward" sort={t.sort} align="right" tip="riskReward">R:R</SortTh>
+            {!compact && <SortTh k="holdDays" sort={t.sort} align="right" tip="holdDays">Hold</SortTh>}
+            <SortTh k="outcome" sort={t.sort} tip="outcome">Outcome</SortTh>
+            {!compact && <SortTh k="netReturnPct" sort={t.sort} align="right" tip="netReturn">Net</SortTh>}
             <th className="w-8" />
           </tr>
         </thead>
         <motion.tbody variants={staggerList} initial="hidden" animate="show">
-          {picks.map((p) => {
+          {t.rows.map((p) => {
             const isOpen = open === p.id
             return (
               <Fragment key={p.id}>
@@ -127,7 +143,7 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
                       <span className="max-w-[220px] truncate text-[11px] text-ink-500">{p.name ?? p.sector}</span>
                     </div>
                   </td>
-                  {openSymbols.length > 0 && (
+                  {live && (
                     <td onClick={(e) => e.stopPropagation()}>
                       {p.outcome === 'OPEN' && !p.isBacktest ? <LiveVsPlan q={quoteOf(p.symbol)} entry={p.entry} target={p.target} stopLoss={p.stopLoss} /> : <span className="text-ink-400">–</span>}
                     </td>
@@ -155,7 +171,7 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
                 <AnimatePresence initial={false}>
                   {isOpen && (
                     <tr>
-                      <td colSpan={(compact ? 11 : 13) + (openSymbols.length > 0 ? 1 : 0)} className="!p-0">
+                      <td colSpan={(compact ? 11 : 13) + (live ? 1 : 0)} className="!p-0">
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
                           <PickDetail pick={p} />
                         </motion.div>
@@ -168,6 +184,7 @@ export function PicksTable({ picks, compact = false }: { picks: PickDto[]; compa
           })}
         </motion.tbody>
       </table>
+    </div>
     </div>
   )
 }

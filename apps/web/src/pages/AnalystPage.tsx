@@ -8,6 +8,7 @@ import { Badge, Button, Callout, Card, InfoTip, PageHeader, ProgressBar, Skeleto
 import { useAiNote, useAskAnalyst, useLiveQuotes, useStockAnalysis } from '../lib/api'
 import { LiveBadge, LivePrice } from '../components/LivePrice'
 import { StockSearch, rememberSymbol } from '../components/StockSearch'
+import { FilterSelect, SortTh, TableToolbar, useSortFilter } from '../components/table'
 import { dateLong, fmt, inr, pct, regimeLabel, regimeTone, setupLabel, setupTone, timeAgo, type Tone } from '../lib/format'
 import { PicksTable } from './PicksPage'
 
@@ -55,8 +56,18 @@ export function AnalystPage() {
   )
 }
 
+const STATUS_ORDER: Record<string, number> = { FAIL: 0, WARN: 1, PASS: 2, NA: 3 }
+
 function Analysis({ a }: { a: StockAnalysisDto }) {
   const groups = [...new Set(a.checklist.map((c) => c.group))]
+  const cl = useSortFilter(a.checklist, {
+    accessor: (c, k) => (k === 'status' ? STATUS_ORDER[c.status] : (c as unknown as Record<string, unknown>)[k]),
+    searchText: (c) => `${c.group} ${c.label} ${c.status} ${c.value} ${c.detail}`,
+    filters: { status: (c, v) => c.status === v, group: (c, v) => c.group === v },
+  })
+  const st = useSortFilter(a.stress, {})
+  const co = useSortFilter(a.conditional, {})
+  const rt = useSortFilter(a.returns, {})
   const { data: quotes } = useLiveQuotes([a.symbol])
   const live = quotes?.[0]
   return (
@@ -140,23 +151,23 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
 
       {/* Checklist */}
       <Card title={<Term k="checklistScore">Stock-picking checklist</Term>} subtitle="Every rule the daily model uses, applied to this stock" padded={false}>
+        <TableToolbar query={cl.query} onQuery={cl.setQuery} count={cl.rows.length} total={cl.total} onClear={cl.clear} active={cl.active} placeholder="Filter checks…">
+          <FilterSelect label="All statuses" value={cl.filterValues.status ?? ''} onChange={(v) => cl.setFilter('status', v)} options={['PASS', 'WARN', 'FAIL', 'NA'].map((s) => ({ value: s, label: s === 'NA' ? 'n/a' : s.toLowerCase() }))} />
+          <FilterSelect label="All groups" value={cl.filterValues.group ?? ''} onChange={(v) => cl.setFilter('group', v)} options={groups.map((g) => ({ value: g, label: g }))} />
+        </TableToolbar>
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
               <tr>
-                <th>Group</th>
-                <th>Check</th>
-                <th>Status</th>
-                <th className="text-right">Value</th>
+                <SortTh k="group" sort={cl.sort}>Group</SortTh>
+                <SortTh k="label" sort={cl.sort}>Check</SortTh>
+                <SortTh k="status" sort={cl.sort}>Status</SortTh>
+                <SortTh k="value" sort={cl.sort} align="right">Value</SortTh>
                 <th>Why</th>
               </tr>
             </thead>
             <motion.tbody variants={staggerList} initial="hidden" animate="show">
-              {groups.map((g) =>
-                a.checklist
-                  .filter((c) => c.group === g)
-                  .map((c, i) => <ChecklistRow key={c.id} c={c} group={i === 0 ? g : ''} />),
-              )}
+              {cl.rows.map((c, i) => <ChecklistRow key={c.id} c={c} group={i === 0 || cl.rows[i - 1].group !== c.group ? c.group : ''} />)}
             </motion.tbody>
           </table>
         </div>
@@ -168,14 +179,14 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
           <table className="table-base">
             <thead>
               <tr>
-                <th>Horizon</th>
-                <th className="text-right">Stock</th>
-                <th className="text-right">NIFTY</th>
-                <th className="text-right">Excess</th>
+                <SortTh k="days" sort={rt.sort}>Horizon</SortTh>
+                <SortTh k="stock" sort={rt.sort} align="right">Stock</SortTh>
+                <SortTh k="nifty" sort={rt.sort} align="right" tip="nifty">NIFTY</SortTh>
+                <SortTh k="excess" sort={rt.sort} align="right" tip="relativeStrength">Excess</SortTh>
               </tr>
             </thead>
             <tbody>
-              {a.returns.map((r) => (
+              {rt.rows.map((r) => (
                 <tr key={r.label}>
                   <td className="font-medium">{r.label}</td>
                   <td className={clsx('num', signCls(r.stock))}>{pct(r.stock, 1, true)}</td>
@@ -211,16 +222,16 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Scenario</th>
-                  <th className="text-right">Days</th>
-                  <th className="text-right">Stock avg</th>
-                  <th className="text-right">NIFTY avg</th>
-                  <th className="text-right">Stock up %</th>
-                  <th className="text-right">Next day</th>
+                  <SortTh k="label" sort={st.sort}>Scenario</SortTh>
+                  <SortTh k="days" sort={st.sort} align="right">Days</SortTh>
+                  <SortTh k="stockAvg" sort={st.sort} align="right">Stock avg</SortTh>
+                  <SortTh k="niftyAvg" sort={st.sort} align="right">NIFTY avg</SortTh>
+                  <SortTh k="stockUpPct" sort={st.sort} align="right">Stock up %</SortTh>
+                  <SortTh k="nextDayStockAvg" sort={st.sort} align="right">Next day</SortTh>
                 </tr>
               </thead>
               <tbody>
-                {a.stress.map((s) => (
+                {st.rows.map((s) => (
                   <tr key={s.id} title={s.description}>
                     <td>
                       <p className="font-medium">{s.label}</p>
@@ -249,15 +260,15 @@ function Analysis({ a }: { a: StockAnalysisDto }) {
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Condition</th>
-                  <th className="text-right">Cases</th>
-                  <th className="text-right">+5d</th>
-                  <th className="text-right">+10d</th>
-                  <th className="text-right">+20d</th>
+                  <SortTh k="label" sort={co.sort}>Condition</SortTh>
+                  <SortTh k="occurrences" sort={co.sort} align="right">Cases</SortTh>
+                  <SortTh k="medianFwd5" sort={co.sort} align="right">+5d</SortTh>
+                  <SortTh k="medianFwd10" sort={co.sort} align="right">+10d</SortTh>
+                  <SortTh k="medianFwd20" sort={co.sort} align="right">+20d</SortTh>
                 </tr>
               </thead>
               <tbody>
-                {a.conditional.map((c) => (
+                {co.rows.map((c) => (
                   <tr key={c.id} title={c.description}>
                     <td>
                       <p className="font-medium">{c.label}</p>

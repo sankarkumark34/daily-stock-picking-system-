@@ -1,9 +1,10 @@
-import type { GroupStatsDto } from '@nse/shared'
+import type { GroupStatsDto, PerformanceWindowDto } from '@nse/shared'
 import clsx from 'clsx'
 import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Callout, Card, EmptyState, PageHeader, Select, Skeleton, Term } from '../components/ui'
+import { Callout, Card, EmptyState, PageHeader, Select, Skeleton } from '../components/ui'
 import { useBacktestRuns, usePerformance } from '../lib/api'
+import { SortTh, useSortFilter } from '../components/table'
 import { dateShort, fmt, pct, regimeLabel, setupLabel } from '../lib/format'
 
 export function PerformancePage() {
@@ -44,45 +45,7 @@ export function PerformancePage() {
         <EmptyState title="No predictions recorded yet" body="Run the daily pipeline for a few sessions (or run a backtest) and outcomes will appear here as targets and stops are resolved." />
       ) : (
         <div className="space-y-5">
-          <Card title="Hit rate by window" subtitle={`As of ${dateShort(data.asOf)}`} padded={false}>
-            <div className="overflow-x-auto">
-              <table className="table-base">
-                <thead>
-                  <tr>
-                    <th>Window</th>
-                    <th className="text-right">Picks</th>
-                    <th className="text-right">Closed</th>
-                    <th className="text-right">Target hit</th>
-                    <th className="text-right">Stop hit</th>
-                    <th className="text-right"><Term k="expired">Expired</Term></th>
-                    <th className="text-right">Open</th>
-                    <th className="text-right"><Term k="hitRate">Hit rate</Term></th>
-                    <th className="text-right"><Term k="directionalAccuracy">Positive %</Term></th>
-                    <th className="text-right"><Term k="netReturn">Avg net</Term></th>
-                    <th className="text-right"><Term k="profitFactor">Profit factor</Term></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.windows.map((w) => (
-                    <tr key={w.label}>
-                      <td className="font-medium">{w.label}</td>
-                      <td className="num">{w.picks}</td>
-                      <td className="num">{w.success + w.failure + w.expired}</td>
-                      <td className="num text-up-700">{w.success}</td>
-                      <td className="num text-down-700">{w.failure}</td>
-                      <td className="num text-warn-700">{w.expired}</td>
-                      <td className="num text-ink-500">{w.open}</td>
-                      <td className={clsx('num font-semibold', rateTone(w.hitRate))}>{w.hitRate === null ? '–' : `${fmt(w.hitRate, 1)}%`}</td>
-                      <td className="num">{w.directionalAccuracy === null ? '–' : `${fmt(w.directionalAccuracy, 1)}%`}</td>
-                      <td className={clsx('num', w.avgNetReturnPct !== null && (w.avgNetReturnPct >= 0 ? 'text-up-700' : 'text-down-700'))}>{pct(w.avgNetReturnPct, 2, true)}</td>
-                      <td className="num">{fmt(w.profitFactor, 2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
+          <WindowsTable windows={data.windows} asOf={data.asOf} />
           <Card title="Daily outcomes" subtitle="Per selection date · resolved picks only">
             <DailyOutcomesChart daily={data.daily} />
           </Card>
@@ -100,18 +63,19 @@ export function PerformancePage() {
 export const rateTone = (v: number | null) => (v === null ? 'text-ink-400' : v >= 60 ? 'text-up-700' : v >= 45 ? 'text-warn-700' : 'text-down-700')
 
 export function GroupTable({ title, rows, labelFn }: { title: string; rows: GroupStatsDto[]; labelFn?: (k: string) => string }) {
+  const t = useSortFilter(rows, { defaultKey: 'trades', defaultDir: 'desc' })
   return (
     <Card title={title} padded={false}>
       <div className="overflow-x-auto">
         <table className="table-base">
           <thead>
             <tr>
-              <th>Group</th>
-              <th className="text-right">Trades</th>
-              <th className="text-right"><Term k="hitRate">Hit rate</Term></th>
-              <th className="text-right"><Term k="directionalAccuracy">Positive %</Term></th>
-              <th className="text-right"><Term k="expectancy">Expectancy</Term></th>
-              <th className="text-right"><Term k="profitFactor">Profit factor</Term></th>
+              <SortTh k="key" sort={t.sort}>Group</SortTh>
+              <SortTh k="trades" sort={t.sort} align="right">Trades</SortTh>
+              <SortTh k="hitRate" sort={t.sort} align="right" tip="hitRate">Hit rate</SortTh>
+              <SortTh k="directionalAccuracy" sort={t.sort} align="right" tip="directionalAccuracy">Positive %</SortTh>
+              <SortTh k="expectancyPct" sort={t.sort} align="right" tip="expectancy">Expectancy</SortTh>
+              <SortTh k="profitFactor" sort={t.sort} align="right" tip="profitFactor">Profit factor</SortTh>
             </tr>
           </thead>
           <tbody>
@@ -122,7 +86,7 @@ export function GroupTable({ title, rows, labelFn }: { title: string; rows: Grou
                 </td>
               </tr>
             )}
-            {rows.map((r) => (
+            {t.rows.map((r) => (
               <tr key={r.key}>
                 <td className="font-medium">{labelFn ? labelFn(r.key) : r.key}</td>
                 <td className="num">{r.trades}</td>
@@ -130,6 +94,50 @@ export function GroupTable({ title, rows, labelFn }: { title: string; rows: Grou
                 <td className="num">{r.directionalAccuracy === null ? '–' : `${fmt(r.directionalAccuracy, 1)}%`}</td>
                 <td className={clsx('num', r.expectancyPct !== null && (r.expectancyPct >= 0 ? 'text-up-700' : 'text-down-700'))}>{pct(r.expectancyPct, 2, true)}</td>
                 <td className="num">{fmt(r.profitFactor, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  )
+}
+
+function WindowsTable({ windows, asOf }: { windows: PerformanceWindowDto[]; asOf: string }) {
+  const t = useSortFilter(windows, {})
+  return (
+    <Card title="Hit rate by window" subtitle={`As of ${dateShort(asOf)}`} padded={false}>
+      <div className="overflow-x-auto">
+        <table className="table-base">
+          <thead>
+            <tr>
+              <SortTh k="label" sort={t.sort}>Window</SortTh>
+              <SortTh k="picks" sort={t.sort} align="right">Picks</SortTh>
+              <th className="text-right">Closed</th>
+              <SortTh k="success" sort={t.sort} align="right">Target hit</SortTh>
+              <SortTh k="failure" sort={t.sort} align="right">Stop hit</SortTh>
+              <SortTh k="expired" sort={t.sort} align="right" tip="expired">Expired</SortTh>
+              <SortTh k="open" sort={t.sort} align="right">Open</SortTh>
+              <SortTh k="hitRate" sort={t.sort} align="right" tip="hitRate">Hit rate</SortTh>
+              <SortTh k="directionalAccuracy" sort={t.sort} align="right" tip="directionalAccuracy">Positive %</SortTh>
+              <SortTh k="avgNetReturnPct" sort={t.sort} align="right" tip="netReturn">Avg net</SortTh>
+              <SortTh k="profitFactor" sort={t.sort} align="right" tip="profitFactor">Profit factor</SortTh>
+            </tr>
+          </thead>
+          <tbody>
+            {t.rows.map((w) => (
+              <tr key={w.label}>
+                <td className="font-medium">{w.label}</td>
+                <td className="num">{w.picks}</td>
+                <td className="num">{w.success + w.failure + w.expired}</td>
+                <td className="num text-up-700">{w.success}</td>
+                <td className="num text-down-700">{w.failure}</td>
+                <td className="num text-warn-700">{w.expired}</td>
+                <td className="num text-ink-500">{w.open}</td>
+                <td className={clsx('num font-semibold', rateTone(w.hitRate))}>{w.hitRate === null ? '–' : `${fmt(w.hitRate, 1)}%`}</td>
+                <td className="num">{w.directionalAccuracy === null ? '–' : `${fmt(w.directionalAccuracy, 1)}%`}</td>
+                <td className={clsx('num', w.avgNetReturnPct !== null && (w.avgNetReturnPct >= 0 ? 'text-up-700' : 'text-down-700'))}>{pct(w.avgNetReturnPct, 2, true)}</td>
+                <td className="num">{fmt(w.profitFactor, 2)}</td>
               </tr>
             ))}
           </tbody>
