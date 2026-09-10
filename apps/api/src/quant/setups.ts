@@ -17,6 +17,53 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   const uptrend = s.ema21 > s.ema50 && s.ema50 > s.sma200;
   const range = s.high - s.low;
   const closePos = range > 0 ? (s.close - s.low) / range : 0.5;
+  const distEma21 = pct(s.close, s.ema21);
+
+  // --- VCP Breakout: Volatility contraction squeeze followed by volume explosion
+  const isVcpTight = (Number.isFinite(s.bbWidth) && s.bbWidth <= 12.5) || (Number.isFinite(s.atrPct) && s.atrPct <= 3.2);
+  const near52wHigh = Number.isFinite(s.high252) ? s.close >= s.high252 * 0.88 : true;
+  if (
+    uptrend &&
+    isVcpTight &&
+    Number.isFinite(s.priorHigh20) &&
+    s.close > s.priorHigh20 &&
+    s.relVol >= 1.8 &&
+    closePos >= 0.65 &&
+    s.close > s.open &&
+    near52wHigh
+  ) {
+    return {
+      setup: 'VCP_BREAKOUT',
+      evidence: [
+        `VCP Volatility contraction breakout: Bandwidth ${s.bbWidth.toFixed(1)}% with ${s.relVol.toFixed(1)}× volume explosion`,
+        `Closed in top ${Math.round((1 - closePos) * 100)}% of range, breaking prior 20-day high (₹${s.priorHigh20.toFixed(1)})`,
+        `Stage-2 uptrend near 52-week highs — high probability sprint momentum setup`,
+      ],
+    };
+  }
+
+  // --- Stage-2 Pullback: Healthy dip to 21-EMA with clean bounce candle in established trend
+  if (
+    uptrend &&
+    distEma21 >= -2.5 &&
+    distEma21 <= 2.0 &&
+    s.close > s.open &&
+    s.close > s.ema21 &&
+    s.low <= s.ema21 * 1.015 &&
+    s.low > s.ema50 * 0.985 &&
+    s.rsi14 >= 40 &&
+    s.rsi14 <= 62 &&
+    s.relVol >= 1.0
+  ) {
+    return {
+      setup: 'STAGE2_PULLBACK',
+      evidence: [
+        `Stage-2 pullback to 21-EMA (${distEma21 >= 0 ? '+' : ''}${distEma21.toFixed(1)}%) with strong bullish bounce candle`,
+        `Healthy momentum reset: RSI ${s.rsi14.toFixed(0)}, ADX ${s.adx14.toFixed(0)} — trend intact`,
+        `Asymmetric risk-reward entry: buying support with tight structural stop`,
+      ],
+    };
+  }
 
   // --- Breakout: closes above the prior 20-day high on expanding volume
   if (
@@ -38,7 +85,6 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   }
 
   // --- Pullback: established uptrend, price returned to EMA21 and is turning up
-  const distEma21 = pct(s.close, s.ema21);
   if (
     uptrend &&
     s.adx14 >= 20 &&

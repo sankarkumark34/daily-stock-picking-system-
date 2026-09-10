@@ -14,11 +14,15 @@ export type MarketRegime =
 
 export type VolatilityRegime = 'LOW' | 'NORMAL' | 'HIGH';
 
+export type TradingHorizon = 'SHORT_TERM' | 'LONG_TERM';
+
 export type SetupType =
   | 'BREAKOUT'
   | 'PULLBACK'
   | 'TREND_CONTINUATION'
   | 'REVERSAL'
+  | 'VCP_BREAKOUT'
+  | 'STAGE2_PULLBACK'
   | 'NONE';
 
 export type PredictionOutcome =
@@ -95,6 +99,8 @@ export const SETUP_LABELS: Record<SetupType, string> = {
   PULLBACK: 'Pullback',
   TREND_CONTINUATION: 'Trend Continuation',
   REVERSAL: 'Reversal',
+  VCP_BREAKOUT: 'VCP Squeeze Breakout',
+  STAGE2_PULLBACK: 'Stage-2 21-EMA Pullback',
   NONE: 'None',
 };
 
@@ -126,10 +132,13 @@ export interface PickDto {
   entry: number;
   target: number;
   stopLoss: number;
+  breakevenTrigger?: number;
+  target2?: number;
   riskReward: number;
   riskPct: number;
   rewardPct: number;
   holdDays: number;
+  horizon?: TradingHorizon;
   reasons: string[];
   factors: FactorScore[];
   regime: MarketRegime;
@@ -323,6 +332,7 @@ export interface BacktestParams {
   costs: TradingCostConfig;
   walkForward: boolean;
   optimizeWeights: boolean;
+  horizon?: TradingHorizon;
   label?: string;
 }
 

@@ -97,6 +97,10 @@ export const outcomeLabel = (o: PredictionOutcome | string): string => {
 
 export const setupTone = (s: SetupType | string): Tone => {
   switch (s) {
+    case 'VCP_BREAKOUT':
+      return 'violet'
+    case 'STAGE2_PULLBACK':
+      return 'success'
     case 'BREAKOUT':
       return 'info'
     case 'PULLBACK':
