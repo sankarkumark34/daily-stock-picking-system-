@@ -30,9 +30,9 @@ export function Card({
   padded?: boolean
 }) {
   return (
-    <section className={clsx('rounded-xl border border-ink-200 bg-white shadow-card', className)}>
+    <section className={clsx('rounded-xl glass-card', className)}>
       {(title || action) && (
-        <header className="flex items-start justify-between gap-4 border-b border-ink-100 px-5 py-3.5">
+        <header className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-3.5">
           <div>
             {title && <h2 className="text-[15px] font-semibold text-ink-900">{title}</h2>}
             {subtitle && <p className="mt-0.5 text-xs text-ink-500">{subtitle}</p>}
