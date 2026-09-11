@@ -14,6 +14,7 @@ import type {
   PerformanceSummaryDto,
   PickDto,
   StockDetailDto,
+  IpoDto,
 } from '@nse/shared'
 
 export class ApiError extends Error {
@@ -183,3 +184,5 @@ export const useDeleteBacktest = () => {
   const invalidate = useInvalidate()
   return useMutation({ mutationFn: (id: number) => api.del<{ deleted: number }>(`/backtest/runs/${id}`), onSuccess: () => invalidate('backtest') })
 }
+
+export const useUpcomingIpos = () => useQuery({ queryKey: ['ipos', 'upcoming'], queryFn: () => api.get<IpoDto[]>('/ipos/upcoming') })

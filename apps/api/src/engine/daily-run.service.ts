@@ -46,6 +46,7 @@ export class DailyRunService {
       minTurnoverWeek: m.minTurnoverWeek,
       minTurnoverMonth: m.minTurnoverMonth,
       minPrice: m.minPrice,
+      maxPrice: m.maxPrice,
       minHistoryBars: m.minHistoryBars,
     };
   }

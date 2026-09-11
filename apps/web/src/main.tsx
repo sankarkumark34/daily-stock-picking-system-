@@ -13,6 +13,7 @@ const BacktestPage = lazy(() => import('./pages/BacktestPage').then((m) => ({ de
 const DataPage = lazy(() => import('./pages/DataPage').then((m) => ({ default: m.DataPage })))
 const StockPage = lazy(() => import('./pages/StockPage').then((m) => ({ default: m.StockPage })))
 const AnalystPage = lazy(() => import('./pages/AnalystPage').then((m) => ({ default: m.AnalystPage })))
+const IposPage = lazy(() => import('./pages/IposPage').then((m) => ({ default: m.IposPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } },
@@ -43,6 +44,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="stocks/:symbol" element={<StockPage />} />
               <Route path="analyst" element={<AnalystPage />} />
               <Route path="analyst/:symbol" element={<AnalystPage />} />
+              <Route path="ipos" element={<IposPage />} />
             </Route>
           </Routes>
         </Suspense>

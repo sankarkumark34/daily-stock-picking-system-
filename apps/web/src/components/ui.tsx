@@ -336,3 +336,11 @@ export function ErrorNote({ error }: { error: unknown }) {
   const msg = error instanceof Error ? error.message : String(error)
   return <Callout tone="danger">{msg}</Callout>
 }
+
+export function Spinner({ size = 'md', className }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
+  const sz = { sm: 'h-4 w-4 border-2', md: 'h-6 w-6 border-2', lg: 'h-8 w-8 border-3' }[size]
+  return (
+    <div className={clsx('animate-spin rounded-full border-current border-t-transparent text-ink-400', sz, className)} role="status" aria-label="Loading" />
+  )
+}
+

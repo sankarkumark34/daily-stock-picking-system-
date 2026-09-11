@@ -19,9 +19,8 @@ export function PicksPage() {
   const { data, isLoading, error } = usePicks(date, runId)
   const { data: runs } = useBacktestRuns()
 
-  const [capital, setCapital] = useState<number>(500000)
-  const [riskPercent, setRiskPercent] = useState<number>(1.0)
   const [tradeValue, setTradeValue] = useState<number>(10000)
+  const [maxEntryPrice, setMaxEntryPrice] = useState<number | null>(1800)
   const [horizonFilter, setHorizonFilter] = useState<'ALL' | 'SHORT_TERM' | 'LONG_TERM'>('ALL')
 
   const sector = params.get('sector') ?? ''
@@ -39,6 +38,9 @@ export function PicksPage() {
     visible = visible.filter((p) => p.holdDays <= 14)
   } else if (horizonFilter === 'LONG_TERM') {
     visible = visible.filter((p) => p.holdDays > 14)
+  }
+  if (maxEntryPrice !== null) {
+    visible = visible.filter((p) => p.entry <= maxEntryPrice)
   }
 
   const sprintCount = (data?.picks ?? []).filter((p) => p.holdDays <= 14).length
@@ -79,7 +81,7 @@ export function PicksPage() {
       />
 
       {/* Strategy Horizon Tabs & Trade Value Validation Center */}
-      <div className="mb-4 grid gap-4 lg:grid-cols-[1.1fr_1.4fr]">
+      <div className="mb-3 grid gap-4 lg:grid-cols-[1.1fr_1.4fr]">
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-white p-2 shadow-sm">
           <button
             type="button"
@@ -163,6 +165,58 @@ export function PicksPage() {
         </div>
       </div>
 
+      {/* Max Entry Price Filter Bar */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50/90 to-indigo-50/70 p-2.5 text-xs text-sky-950 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-bold flex items-center gap-1 text-sky-950">
+            <span>🏷️</span> Max Entry Price:
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { label: '≤ ₹1,800 (10k Sweet Spot)', val: 1800 },
+              { label: '≤ ₹1,000', val: 1000 },
+              { label: '≤ ₹500', val: 500 },
+              { label: 'All Prices', val: null },
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => setMaxEntryPrice(chip.val)}
+                className={clsx(
+                  'rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
+                  maxEntryPrice === chip.val
+                    ? 'bg-sky-700 text-white shadow-xs'
+                    : 'bg-white border border-sky-200 text-sky-900 hover:bg-sky-100',
+                )}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-sky-800">Custom Max: ₹</span>
+          <input
+            type="number"
+            step="100"
+            min="50"
+            value={maxEntryPrice ?? ''}
+            placeholder="e.g. 1800"
+            onChange={(e) => setMaxEntryPrice(e.target.value ? Number(e.target.value) : null)}
+            className="w-20 rounded-md border border-sky-300 bg-white px-2 py-0.5 text-xs font-bold text-ink-900 shadow-2xs focus:border-sky-600 focus:outline-none focus:ring-1 focus:ring-sky-500"
+          />
+          {maxEntryPrice !== null && (
+            <button
+              type="button"
+              onClick={() => setMaxEntryPrice(null)}
+              className="text-[11px] font-semibold text-sky-600 hover:text-sky-900 underline cursor-pointer"
+            >
+              Show all
+            </button>
+          )}
+        </div>
+      </div>
+
       {error && <Callout tone="danger">{(error as Error).message}</Callout>}
       {isLoading ? (
         <Skeleton className="h-72" />
@@ -172,10 +226,13 @@ export function PicksPage() {
           body={runId ? 'The backtest produced no qualifying setups on this day.' : 'Either the daily pipeline has not run yet, or no stock cleared the minimum quality score. Run it from the Data page.'}
         />
       ) : visible.length === 0 ? (
-        <EmptyState title={`No picks matching filters`} body="Clear the horizon or sector filter to see the full list." />
+        <EmptyState
+          title={`No picks matching filters (Entry ≤ ₹${maxEntryPrice})`}
+          body="Click 'All Prices' or clear the filters to see stocks priced higher."
+        />
       ) : (
-        <Card padded={false} title={sector || horizonFilter !== 'ALL' ? `${horizonFilter === 'SHORT_TERM' ? '⚡ Sprint-15 Momentum' : horizonFilter === 'LONG_TERM' ? '🎯 Marathon-30 Positional' : 'All'} · ${visible.length} of ${data.picks.length} picks` : undefined}>
-          <PicksTable picks={visible} capital={capital} riskPercent={riskPercent} tradeValue={tradeValue} onTradeValueChange={setTradeValue} />
+        <Card padded={false} title={`${maxEntryPrice ? `Entry ≤ ₹${maxEntryPrice.toLocaleString('en-IN')} · ` : ''}${horizonFilter === 'SHORT_TERM' ? '⚡ Sprint-15 Momentum · ' : horizonFilter === 'LONG_TERM' ? '🎯 Marathon-30 Positional · ' : ''}${visible.length} of ${data.picks.length} picks`}>
+          <PicksTable picks={visible} tradeValue={tradeValue} onTradeValueChange={setTradeValue} />
         </Card>
       )}
     </>
@@ -185,8 +242,8 @@ export function PicksPage() {
 export function PicksTable({
   picks,
   compact = false,
-  capital = 500000,
-  riskPercent = 1.0,
+  capital: _capital = 500000,
+  riskPercent: _riskPercent = 1.0,
   tradeValue = 10000,
   onTradeValueChange,
 }: {
@@ -323,8 +380,8 @@ export function PicksTable({
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
                             <PickDetail
                               pick={p}
-                              capital={capital}
-                              riskPercent={riskPercent}
+                              capital={_capital}
+                              riskPercent={_riskPercent}
                               tradeValue={tradeValue}
                               onTradeValueChange={onTradeValueChange}
                             />
@@ -345,8 +402,8 @@ export function PicksTable({
 
 export function PickDetail({
   pick: p,
-  capital = 500000,
-  riskPercent = 1.0,
+  capital: _capital = 500000,
+  riskPercent: _riskPercent = 1.0,
   tradeValue = 10000,
   onTradeValueChange,
 }: {

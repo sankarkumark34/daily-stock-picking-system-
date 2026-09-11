@@ -621,3 +621,18 @@ export interface DailyRunResultDto {
   evaluated: number;
   durationMs: number;
 }
+
+export interface IpoDto {
+  symbol: string;
+  companyName: string;
+  openDate: string;
+  closeDate: string;
+  priceBand: string;
+  lotSize: number;
+  qibSubscription: number;
+  nniSubscription: number;
+  retailSubscription: number;
+  gmpPercent: number;
+  isElite: boolean;
+  eliteReasons: string[];
+}

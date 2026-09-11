@@ -21,6 +21,7 @@ export interface AnalyzeOptions {
   minTurnoverWeek: number;
   minTurnoverMonth: number;
   minPrice: number;
+  maxPrice?: number;
   minHistoryBars: number;
 }
 
@@ -151,20 +152,23 @@ export class AnalysisService {
   }
 
   /** Apply weights, thresholds, regime gating and sector diversification → ranked picks. */
-  rank(a: DateAnalysis, opts: Pick<AnalyzeOptions, 'maxPicks' | 'minScore' | 'maxPerSector' | 'weights'>, setupRates: Map<string, number | null>): RankedPick[] {
-    const scored = a.candidates.map((cand) => {
-      const { total, factors } = applyWeights(cand.raw, opts.weights, cand.notes);
-      return { cand, total, factors };
-    });
+  rank(a: DateAnalysis, opts: Pick<AnalyzeOptions, 'maxPicks' | 'minScore' | 'maxPerSector' | 'weights' | 'maxPrice'>, setupRates: Map<string, number | null>): RankedPick[] {
+    const scored = a.candidates
+      .filter((cand) => !opts.maxPrice || cand.snap.close <= opts.maxPrice)
+      .map((cand) => {
+        const { total, factors } = applyWeights(cand.raw, opts.weights, cand.notes);
+        return { cand, total, factors };
+      });
     scored.sort((x, y) => y.total - x.total || y.cand.levels.riskReward - x.cand.levels.riskReward);
 
     const perSector = new Map<string, number>();
     const out: RankedPick[] = [];
     const bearish = a.regime.regime === 'STRONG_BEARISH';
-    const minScore = bearish ? opts.minScore + 8 : opts.minScore;
+    const minScore = bearish ? opts.minScore + 6 : opts.minScore;
     for (const s of scored) {
       if (out.length >= opts.maxPicks) break;
-      if (s.total < minScore) break;
+      if (s.total < minScore && out.length >= 5) break;
+      if (s.total < 60) break; // absolute quality floor
       if (bearish && s.cand.setup === 'REVERSAL') continue; // no catching knives in a crash
       const sec = s.cand.snap.sector;
       const cnt = perSector.get(sec) ?? 0;

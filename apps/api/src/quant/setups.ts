@@ -45,15 +45,15 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   // --- Stage-2 Pullback: Healthy dip to 21-EMA with clean bounce candle in established trend
   if (
     uptrend &&
-    distEma21 >= -2.5 &&
-    distEma21 <= 2.0 &&
+    distEma21 >= -3.0 &&
+    distEma21 <= 2.8 &&
     s.close > s.open &&
     s.close > s.ema21 &&
-    s.low <= s.ema21 * 1.015 &&
-    s.low > s.ema50 * 0.985 &&
-    s.rsi14 >= 40 &&
-    s.rsi14 <= 62 &&
-    s.relVol >= 1.0
+    s.low <= s.ema21 * 1.02 &&
+    s.low > s.ema50 * 0.98 &&
+    s.rsi14 >= 38 &&
+    s.rsi14 <= 64 &&
+    s.relVol >= 0.8
   ) {
     return {
       setup: 'STAGE2_PULLBACK',
@@ -69,8 +69,8 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   if (
     Number.isFinite(s.priorHigh20) &&
     s.close > s.priorHigh20 &&
-    s.relVol >= 1.5 &&
-    closePos >= 0.6 &&
+    s.relVol >= 1.25 &&
+    closePos >= 0.55 &&
     s.close > s.ema21 &&
     s.close > s.sma50
   ) {
@@ -87,13 +87,13 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   // --- Pullback: established uptrend, price returned to EMA21 and is turning up
   if (
     uptrend &&
-    s.adx14 >= 20 &&
-    s.maxDistEma21_10 >= 4 &&
-    distEma21 >= -2.5 &&
-    distEma21 <= 2.5 &&
-    s.low > s.ema50 * 0.985 &&
+    s.adx14 >= 18 &&
+    s.maxDistEma21_10 >= 3 &&
+    distEma21 >= -3.0 &&
+    distEma21 <= 3.0 &&
+    s.low > s.ema50 * 0.98 &&
     s.close > s.open &&
-    s.rsi14 >= 40 &&
+    s.rsi14 >= 38 &&
     s.rsi14 <= 65
   ) {
     return {
@@ -111,10 +111,10 @@ export function detectSetup(s: StockSnapshot): SetupDetection {
   if (
     s.ema9 > s.ema21 &&
     uptrend &&
-    s.adx14 >= 25 &&
+    s.adx14 >= 20 &&
     s.supertrendDir === 1 &&
-    distHigh20 >= -5 &&
-    s.rsi14 >= 50 &&
+    distHigh20 >= -8 &&
+    s.rsi14 >= 48 &&
     s.rsi14 <= 75 &&
     s.ret20 > 0
   ) {

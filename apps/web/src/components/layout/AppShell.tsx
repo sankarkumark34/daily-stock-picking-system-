@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles } from 'lucide-react'
+import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles, Rocket } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useDataStatus, useLiveMarket, useMarketOverview } from '../../lib/api'
@@ -14,6 +14,7 @@ const NAV = [
   { to: '/analyst', label: 'Stock Analyst', icon: Sparkles },
   { to: '/performance', label: 'Performance', icon: BarChart3 },
   { to: '/backtest', label: 'Backtest', icon: FlaskConical },
+  { to: '/ipos', label: 'Upcoming IPOs', icon: Rocket },
   { to: '/data', label: 'Data', icon: Database },
 ]
 
