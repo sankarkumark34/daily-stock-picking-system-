@@ -4,7 +4,7 @@ import { DEFAULT_FACTOR_WEIGHTS, DEFAULT_TRADING_COSTS, type DailyRunResultDto }
 import { IsNull, Repository } from 'typeorm';
 import { toPickDto } from '../api/pick-mapper.js';
 import { loadConfig } from '../config/app.config.js';
-import { DataService } from '../data/data.service.js';
+import { DataService, weekdaysBetween } from '../data/data.service.js';
 import { MarketSnapshotEntity } from '../database/entities/market-snapshot.entity.js';
 import { PredictionEntity } from '../database/entities/prediction.entity.js';
 import { StockEntity } from '../database/entities/stock.entity.js';
@@ -46,6 +46,7 @@ export class DailyRunService {
       minTurnoverWeek: m.minTurnoverWeek,
       minTurnoverMonth: m.minTurnoverMonth,
       minPrice: m.minPrice,
+      maxPrice: m.maxPrice,
       minHistoryBars: m.minHistoryBars,
     };
   }
@@ -74,13 +75,21 @@ export class DailyRunService {
    */
   async run(date?: string, tryIngest = true): Promise<DailyRunResultDto> {
     const t0 = Date.now();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10); // IST calendar date
     if (tryIngest) {
       const target = date ?? today;
-      try {
-        await this.data.ingestDate(target);
-      } catch (err) {
-        this.log.warn(`ingest ${target} failed: ${(err as Error).message}`);
+      // Fill every weekday between the last stored bar and the target so a missed
+      // evening (machine off, NSE late) never leaves a hole in the history.
+      const last = await this.store.latestDate();
+      const from = last ? shiftDate(last, 1) : target;
+      const pending = weekdaysBetween(from <= target ? from : target, target);
+      for (const d of pending) {
+        try {
+          const rows = await this.data.ingestDate(d);
+          if (rows) this.log.log(`ingested ${d}: ${rows} rows`);
+        } catch (err) {
+          this.log.warn(`ingest ${d} failed: ${(err as Error).message}`);
+        }
       }
     }
     const runDate = date ?? (await this.store.latestDate());

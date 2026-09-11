@@ -61,21 +61,32 @@ export function evaluateOutcome(
   };
 
   const lastIdx = fillIdx + levels.holdDays - 1;
+  const breakeven = levels.breakevenTrigger;
+  let activeStop = levels.stopLoss;
+  let hasLockedBreakeven = false;
+
   for (let i = fillIdx; i <= lastIdx && i < s.dates.length; i++) {
     const hi = s.high[i];
     const lo = s.low[i];
     const op = s.open[i];
+
+    // Breakeven Shield: When price reaches breakevenTrigger (+7%), raise stop to cover entry and fees
+    if (breakeven && !hasLockedBreakeven && hi >= breakeven) {
+      hasLockedBreakeven = true;
+      activeStop = Math.max(activeStop, fill * 1.005);
+    }
+
     if (i === fillIdx) {
       // On the fill day the open already happened at `fill`; a gap below stop exits immediately.
-      if (op <= levels.stopLoss) return done('FAILURE', op, i);
-    } else if (op <= levels.stopLoss) {
-      return done('FAILURE', op, i);
+      if (op <= activeStop) return done(hasLockedBreakeven ? 'SUCCESS' : 'FAILURE', op, i);
+    } else if (op <= activeStop) {
+      return done(hasLockedBreakeven ? 'SUCCESS' : 'FAILURE', op, i);
     } else if (op >= levels.target) {
       return done('SUCCESS', op, i);
     }
-    const hitStop = lo <= levels.stopLoss;
+    const hitStop = lo <= activeStop;
     const hitTarget = hi >= levels.target;
-    if (hitStop) return done('FAILURE', levels.stopLoss, i);
+    if (hitStop) return done(hasLockedBreakeven ? 'SUCCESS' : 'FAILURE', activeStop, i);
     if (hitTarget) return done('SUCCESS', levels.target, i);
   }
   if (lastIdx < s.dates.length) return done('EXPIRED', s.close[lastIdx], lastIdx);

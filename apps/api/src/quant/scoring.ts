@@ -64,11 +64,22 @@ export function computeRawFactors(i: Omit<ScoreInput, 'weights' | 'setupSuccessR
     const p5 = cs.pct('ret5', s.ret5);
     const p20 = cs.pct('ret20', s.ret20);
     const p60 = cs.pct('ret60', s.ret60);
-    let v = p5 * 0.25 + p20 * 0.45 + p60 * 0.3;
-    if (s.rsi14 >= 55 && s.rsi14 <= 72) v += 6;
-    else if (s.rsi14 > 80) v -= 10;
+    let v: number;
+    if (i.setup === 'STAGE2_PULLBACK' || i.setup === 'PULLBACK') {
+      // Pullbacks pause short-term: assess medium/longer-term strength + clean RSI reset
+      v = p20 * 0.45 + p60 * 0.4 + 15;
+      if (s.rsi14 >= 40 && s.rsi14 <= 60) v += 8; // pristine pullback zone
+      if (s.close > s.open) v += 5; // bounce candle
+    } else if (i.setup === 'VCP_BREAKOUT') {
+      v = p5 * 0.3 + p20 * 0.4 + p60 * 0.3 + 8;
+      if (s.rsi14 >= 55 && s.rsi14 <= 74) v += 6;
+    } else {
+      v = p5 * 0.25 + p20 * 0.45 + p60 * 0.3;
+      if (s.rsi14 >= 55 && s.rsi14 <= 72) v += 6;
+      else if (s.rsi14 > 80) v -= 10;
+    }
     if (s.macdHist > 0) v += 4;
-    if (s.stochRsi > 80 && s.ret5 > 6) v -= 5; // stretched short-term
+    if (s.stochRsi > 85 && s.ret5 > 8) v -= 6; // stretched short-term
     raw.momentum = clamp(v);
     notes.momentum = `20d return ${fin(s.ret20).toFixed(1)}% (${p20.toFixed(0)}th pct), 60d ${fin(s.ret60).toFixed(1)}%, RSI ${fin(s.rsi14).toFixed(0)}`;
   }
@@ -83,6 +94,7 @@ export function computeRawFactors(i: Omit<ScoreInput, 'weights' | 'setupSuccessR
     if (s.close > s.sma200) v += 10;
     if (s.supertrendDir === 1) v += 10;
     v += clamp(((fin(s.adx14) - 15) / 25) * 25, 0, 25);
+    if (i.setup === 'STAGE2_PULLBACK' && s.ema21 > s.ema50 && s.ema50 > s.sma200) v += 5;
     raw.trend = clamp(v);
     const stack = [s.ema9 > s.ema21, s.ema21 > s.ema50, s.ema50 > s.sma200].filter(Boolean).length;
     notes.trend = `${stack}/3 EMA alignments bullish, ADX ${fin(s.adx14).toFixed(0)}, Supertrend ${s.supertrendDir === 1 ? 'up' : 'down'}`;
@@ -113,6 +125,7 @@ export function computeRawFactors(i: Omit<ScoreInput, 'weights' | 'setupSuccessR
     v += clamp((fin(s.upDownVolRatio10, 1) - 1) * 15, -10, 15);
     if (Number.isFinite(s.deliveryPct) && Number.isFinite(s.avgDeliveryPct20)) {
       v += clamp((s.deliveryPct - s.avgDeliveryPct20) * 0.5, -8, 10);
+      if (s.deliveryPct >= 45 && s.relVol >= 1.5) v += 8; // Institutional delivery shock
     }
     raw.volume = clamp(v);
     notes.volume = `Volume ${fin(s.relVol, 1).toFixed(1)}× avg, up/down volume ratio ${fin(s.upDownVolRatio10, 1).toFixed(2)}${
@@ -128,6 +141,8 @@ export function computeRawFactors(i: Omit<ScoreInput, 'weights' | 'setupSuccessR
     if (Number.isFinite(dHigh20)) v += dHigh20 >= 0 ? 25 : clamp(25 + dHigh20 * 3, 0, 25);
     if (Number.isFinite(dHigh252)) v += dHigh252 >= -3 ? 20 : clamp(20 + (dHigh252 + 3) * 1, 0, 20);
     v += fin(s.higherLows) * 10;
+    if (i.setup === 'VCP_BREAKOUT') v += 12; // VCP tightness reward
+    if (i.setup === 'STAGE2_PULLBACK') v += 10; // Support holding reward
     if (s.bbPctB >= 0.5 && s.bbPctB <= 1.05) v += 10;
     else if (s.bbPctB > 1.15) v -= 5;
     const range = s.high - s.low;

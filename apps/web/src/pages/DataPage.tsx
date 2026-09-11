@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import { Badge, Button, Callout, Card, Field, Input, PageHeader, ProgressBar, Skeleton, StatTile, staggerList } from '../components/ui'
 import { useBackfill, useDataStatus, useEvaluate, useIngest, useRunDaily, useSyncUniverse } from '../lib/api'
+import { FilterSelect, SortTh, TableToolbar, useSortFilter } from '../components/table'
 import { dateLong, dateShort, timeAgo, todayIso } from '../lib/format'
 
 export function DataPage() {
@@ -18,6 +19,12 @@ export function DataPage() {
   const [to, setTo] = useState(todayIso())
   const [runDate, setRunDate] = useState('')
   const busy = data?.job?.status === 'RUNNING'
+  const lg = useSortFilter(data?.recentLogs, {
+    defaultKey: 'id',
+    defaultDir: 'desc',
+    searchText: (l) => `${l.date} ${l.source} ${l.status} ${l.message ?? ''}`,
+    filters: { status: (l, v) => l.status === v, source: (l, v) => l.source === v },
+  })
 
   return (
     <>
@@ -120,20 +127,24 @@ export function DataPage() {
       </div>
 
       <Card className="mt-5" title="Recent ingest log" padded={false}>
+        <TableToolbar query={lg.query} onQuery={lg.setQuery} count={lg.rows.length} total={lg.total} onClear={lg.clear} active={lg.active} placeholder="Filter log…">
+          <FilterSelect label="All statuses" value={lg.filterValues.status ?? ''} onChange={(v) => lg.setFilter('status', v)} options={['OK', 'EMPTY', 'ERROR'].map((s) => ({ value: s, label: s }))} />
+          <FilterSelect label="All sources" value={lg.filterValues.source ?? ''} onChange={(v) => lg.setFilter('source', v)} options={[...new Set((data?.recentLogs ?? []).map((l) => l.source))].map((s) => ({ value: s, label: s }))} />
+        </TableToolbar>
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th className="text-right">Rows</th>
+                <SortTh k="date" sort={lg.sort}>Date</SortTh>
+                <SortTh k="source" sort={lg.sort}>Source</SortTh>
+                <SortTh k="status" sort={lg.sort}>Status</SortTh>
+                <SortTh k="rows" sort={lg.sort} align="right">Rows</SortTh>
                 <th>Message</th>
-                <th>Logged</th>
+                <SortTh k="createdAt" sort={lg.sort}>Logged</SortTh>
               </tr>
             </thead>
             <tbody>
-              {data?.recentLogs.map((l) => (
+              {lg.rows.map((l) => (
                 <tr key={l.id}>
                   <td className="font-medium">{dateLong(l.date)}</td>
                   <td>{l.source}</td>

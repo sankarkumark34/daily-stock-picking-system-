@@ -158,18 +158,18 @@ export function SectorList({ sectors, limit = 12 }: { sectors: SectorStrengthDto
   return (
     <motion.ul variants={staggerList} initial="hidden" animate="show" className="space-y-2.5">
       {list.map((s) => (
-        <motion.li key={s.sector} variants={fadeUp} className="grid grid-cols-[minmax(0,1fr)_120px_56px] items-center gap-3 text-sm">
+        <motion.li key={s.sector} variants={fadeUp} className="grid grid-cols-[minmax(0,1fr)_80px_40px] sm:grid-cols-[minmax(0,1fr)_120px_56px] items-center gap-2 sm:gap-3 text-sm">
           <div className="min-w-0">
             <p className="truncate font-medium text-ink-900">
               <span className="mr-1.5 text-ink-400 tnum">{s.rank}.</span>
               {s.sector}
             </p>
-            <p className="text-[11px] text-ink-500">
+            <p className="truncate text-[11px] text-ink-500">
               {s.constituents} stocks · RS {pct(s.relativeStrength20, 1, true)} · {fmt(s.breadthAboveEma21, 0)}% above EMA21
             </p>
           </div>
           <ProgressBar value={s.score} tone={s.score >= 60 ? 'success' : s.score >= 45 ? 'info' : 'danger'} />
-          <span className="num font-semibold">{fmt(s.score, 0)}</span>
+          <span className="num font-semibold text-right">{fmt(s.score, 0)}</span>
         </motion.li>
       ))}
     </motion.ul>

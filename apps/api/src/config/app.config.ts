@@ -31,6 +31,7 @@ export interface AppConfig {
     minTurnoverWeek: number;
     minTurnoverMonth: number;
     minPrice: number;
+    maxPrice: number;
     minHistoryBars: number;
   };
   analyst: {
@@ -74,13 +75,14 @@ export function loadConfig(): AppConfig {
     },
     model: {
       maxPicks: num(e.MODEL_MAX_PICKS, 10),
-      minScore: num(e.MODEL_MIN_SCORE, 72),
+      minScore: num(e.MODEL_MIN_SCORE, 65),
       holdDays: num(e.MODEL_HOLD_DAYS, 5),
       maxPerSector: num(e.MODEL_MAX_PER_SECTOR, 2),
       minTurnoverDay: num(e.MODEL_MIN_TURNOVER_DAY, 100_000),
       minTurnoverWeek: num(e.MODEL_MIN_TURNOVER_WEEK, 1_000_000),
       minTurnoverMonth: num(e.MODEL_MIN_TURNOVER_MONTH, 10_000_000),
       minPrice: num(e.MODEL_MIN_PRICE, 30),
+      maxPrice: num(e.MODEL_MAX_PRICE, 1800),
       minHistoryBars: num(e.MODEL_MIN_HISTORY_BARS, 220),
     },
     analyst: {

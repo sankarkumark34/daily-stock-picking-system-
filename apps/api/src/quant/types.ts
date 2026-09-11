@@ -132,10 +132,13 @@ export interface TradeLevels {
   entryHigh: number;
   stopLoss: number;
   target: number;
+  breakevenTrigger?: number;
+  target2?: number;
   riskPct: number;
   rewardPct: number;
   riskReward: number;
   holdDays: number;
+  horizon?: 'SHORT_TERM' | 'LONG_TERM';
 }
 
 export interface TradeRecord {

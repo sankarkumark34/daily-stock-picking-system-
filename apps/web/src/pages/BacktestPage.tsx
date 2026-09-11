@@ -1,4 +1,4 @@
-import type { BacktestMetrics, BacktestParams, BacktestRunDto } from '@nse/shared'
+import type { BacktestMetrics, BacktestParams, BacktestRunDto, WalkForwardSplitResult } from '@nse/shared'
 import { FACTOR_LABELS, FACTOR_NAMES } from '@nse/shared'
 import clsx from 'clsx'
 import { Play, Trash2 } from 'lucide-react'
@@ -8,6 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Badge, Button, Callout, Card, EmptyState, Field, Input, PageHeader, ProgressBar, Skeleton, StatTile, Term, Toggle, fadeUp, staggerList } from '../components/ui'
 import { useBacktestDefaults, useBacktestRun, useBacktestRuns, useDeleteBacktest, useStartBacktest } from '../lib/api'
+import { SortTh, useSortFilter } from '../components/table'
 import { dateShort, fmt, pct, regimeLabel, setupLabel, timeAgo } from '../lib/format'
 import { DailyOutcomesChart, GroupTable, rateTone } from './PerformancePage'
 
@@ -152,8 +153,25 @@ function NewRunForm() {
   )
 }
 
+const WF_ACCESSOR = (s: WalkForwardSplitResult, key: string): unknown => {
+  switch (key) {
+    case 'label': return s.label
+    case 'trainHit': return s.train.metrics?.winRate ?? null
+    case 'trainExp': return s.train.metrics?.expectancyPct ?? null
+    case 'valHit': return s.validate.metrics?.winRate ?? null
+    case 'valExp': return s.validate.metrics?.expectancyPct ?? null
+    case 'testTrades': return s.test.metrics?.trades ?? null
+    case 'testHit': return s.test.metrics?.winRate ?? null
+    case 'testExp': return s.test.metrics?.expectancyPct ?? null
+    case 'testPF': return s.test.metrics?.profitFactor ?? null
+    case 'baseExp': return s.baselineTestMetrics?.expectancyPct ?? null
+    default: return null
+  }
+}
+
 function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => void }) {
   const m = run.metrics
+  const wf = useSortFilter(run.walkForward, { accessor: WF_ACCESSOR })
   if (run.status === 'FAILED') return <Callout tone="danger" title="Backtest failed">{run.error}</Callout>
   if (run.status !== 'COMPLETED' || !m) {
     return (
@@ -249,20 +267,20 @@ function RunDetail({ run, onDelete }: { run: BacktestRunDto; onDelete: () => voi
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Split</th>
-                  <th className="text-right">Train hit</th>
-                  <th className="text-right">Train exp.</th>
-                  <th className="text-right">Validate hit</th>
-                  <th className="text-right">Validate exp.</th>
-                  <th className="text-right">Test trades</th>
-                  <th className="text-right">Test hit</th>
-                  <th className="text-right">Test exp.</th>
-                  <th className="text-right">Test PF</th>
-                  {run.params.optimizeWeights && <th className="text-right">Baseline test exp.</th>}
+                  <SortTh k="label" sort={wf.sort}>Split</SortTh>
+                  <SortTh k="trainHit" sort={wf.sort} align="right">Train hit</SortTh>
+                  <SortTh k="trainExp" sort={wf.sort} align="right">Train exp.</SortTh>
+                  <SortTh k="valHit" sort={wf.sort} align="right">Validate hit</SortTh>
+                  <SortTh k="valExp" sort={wf.sort} align="right">Validate exp.</SortTh>
+                  <SortTh k="testTrades" sort={wf.sort} align="right">Test trades</SortTh>
+                  <SortTh k="testHit" sort={wf.sort} align="right" tip="hitRate">Test hit</SortTh>
+                  <SortTh k="testExp" sort={wf.sort} align="right" tip="expectancy">Test exp.</SortTh>
+                  <SortTh k="testPF" sort={wf.sort} align="right" tip="profitFactor">Test PF</SortTh>
+                  {run.params.optimizeWeights && <SortTh k="baseExp" sort={wf.sort} align="right">Baseline test exp.</SortTh>}
                 </tr>
               </thead>
               <tbody>
-                {run.walkForward.map((s) => (
+                {wf.rows.map((s) => (
                   <tr key={s.label}>
                     <td className="font-medium">{s.label}</td>
                     <Cells m={s.train.metrics} />

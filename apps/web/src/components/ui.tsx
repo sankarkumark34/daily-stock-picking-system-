@@ -30,9 +30,9 @@ export function Card({
   padded?: boolean
 }) {
   return (
-    <section className={clsx('rounded-xl border border-ink-200 bg-white shadow-card', className)}>
+    <section className={clsx('rounded-xl glass-card', className)}>
       {(title || action) && (
-        <header className="flex items-start justify-between gap-4 border-b border-ink-100 px-5 py-3.5">
+        <header className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-3.5">
           <div>
             {title && <h2 className="text-[15px] font-semibold text-ink-900">{title}</h2>}
             {subtitle && <p className="mt-0.5 text-xs text-ink-500">{subtitle}</p>}
@@ -336,3 +336,11 @@ export function ErrorNote({ error }: { error: unknown }) {
   const msg = error instanceof Error ? error.message : String(error)
   return <Callout tone="danger">{msg}</Callout>
 }
+
+export function Spinner({ size = 'md', className }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
+  const sz = { sm: 'h-4 w-4 border-2', md: 'h-6 w-6 border-2', lg: 'h-8 w-8 border-3' }[size]
+  return (
+    <div className={clsx('animate-spin rounded-full border-current border-t-transparent text-ink-400', sz, className)} role="status" aria-label="Loading" />
+  )
+}
+

@@ -1,8 +1,9 @@
 import clsx from 'clsx'
-import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles } from 'lucide-react'
+import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles, Rocket } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { useDataStatus, useMarketOverview } from '../../lib/api'
+import { useDataStatus, useLiveMarket, useMarketOverview } from '../../lib/api'
+import { LiveBadge, LivePrice } from '../LivePrice'
 import { StockSearch } from '../StockSearch'
 import { dateShort, regimeLabel, regimeTone } from '../../lib/format'
 import { Badge } from '../ui'
@@ -13,6 +14,7 @@ const NAV = [
   { to: '/analyst', label: 'Stock Analyst', icon: Sparkles },
   { to: '/performance', label: 'Performance', icon: BarChart3 },
   { to: '/backtest', label: 'Backtest', icon: FlaskConical },
+  { to: '/ipos', label: 'Upcoming IPOs', icon: Rocket },
   { to: '/data', label: 'Data', icon: Database },
 ]
 
@@ -20,8 +22,8 @@ export function AppShell() {
   const location = useLocation()
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-200 bg-white lg:flex">
-        <div className="flex h-14 items-center gap-2.5 border-b border-ink-100 px-5">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-white/60 glass-panel lg:flex rounded-r-2xl my-4 ml-4">
+        <div className="flex h-14 items-center gap-2.5 border-b border-white/50 px-5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
             <Activity size={18} strokeWidth={2.4} />
           </span>
@@ -38,8 +40,8 @@ export function AppShell() {
               end={n.end}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-700 hover:bg-ink-100',
+                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:scale-[1.02]',
+                  isActive ? 'bg-white/60 text-brand-700 shadow-sm border border-white/80' : 'text-ink-600 hover:bg-white/40 hover:text-ink-900',
                 )
               }
             >
@@ -67,15 +69,16 @@ export function AppShell() {
 
 function TopBar() {
   const { data: overview } = useMarketOverview()
+  const { data: live } = useLiveMarket()
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-ink-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+    <header className="sticky top-4 z-20 mx-4 lg:mx-8 mb-4 flex h-14 items-center justify-between gap-4 rounded-xl border border-white/60 glass-panel px-4 sm:px-6">
       <div className="flex items-center gap-3 lg:hidden">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
           <Activity size={18} />
         </span>
         <nav className="flex gap-1 overflow-x-auto" aria-label="Primary (compact)">
           {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => clsx('rounded-md px-2 py-1 text-xs font-medium', isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-600')}>
+            <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => clsx('rounded-md px-2 py-1 text-xs font-medium', isActive ? 'bg-white/60 text-brand-700 border border-white/80 shadow-sm' : 'text-ink-600 hover:text-ink-900')}>
               {n.label}
             </NavLink>
           ))}
@@ -91,13 +94,27 @@ function TopBar() {
             <Badge tone={regimeTone(overview.regime)} size="md">
               {regimeLabel(overview.regime)}
             </Badge>
-            <span className="hidden items-center gap-1.5 tnum text-ink-700 md:flex">
-              NIFTY <strong>{overview.nifty.close.toLocaleString('en-IN')}</strong>
-              <span className={overview.nifty.changePct >= 0 ? 'text-up-600' : 'text-down-600'}>
-                {overview.nifty.changePct >= 0 ? '+' : ''}
-                {overview.nifty.changePct.toFixed(2)}%
+            {live?.nifty ? (
+              <span className="hidden items-center gap-2 md:flex">
+                <span className="text-ink-500">NIFTY</span>
+                <LivePrice q={live.nifty} />
+                {live.vix && (
+                  <span className="hidden items-center gap-1 text-xs text-ink-500 lg:inline-flex">
+                    · VIX <span className="tnum font-medium text-ink-700">{live.vix.ltp.toFixed(2)}</span>
+                  </span>
+                )}
+                <LiveBadge q={live.nifty} />
               </span>
-            </span>
+            ) : (
+              <span className="hidden items-center gap-1.5 tnum text-ink-700 md:flex">
+                NIFTY <strong>{overview.nifty.close.toLocaleString('en-IN')}</strong>
+                <span className={overview.nifty.changePct >= 0 ? 'text-up-600' : 'text-down-600'}>
+                  {overview.nifty.changePct >= 0 ? '+' : ''}
+                  {overview.nifty.changePct.toFixed(2)}%
+                </span>
+                <span className="text-[10px] text-ink-400">EOD</span>
+              </span>
+            )}
           </>
         ) : (
           <Badge tone="neutral" size="md">
@@ -112,7 +129,7 @@ function TopBar() {
 function DataFooter() {
   const { data } = useDataStatus()
   return (
-    <div className="border-t border-ink-100 px-5 py-3 text-[11px] leading-relaxed text-ink-500">
+    <div className="border-t border-white/50 px-5 py-3 text-[11px] leading-relaxed text-ink-500">
       <p>
         Data through <span className="font-medium text-ink-700">{dateShort(data?.lastDate)}</span>
       </p>

@@ -10,20 +10,25 @@ interface SetupParams {
   stopAtr: number;
   targetAtr: number;
   holdDays: number;
+  minTargetPct: number;
+  maxRiskPct: number;
 }
 
 const PARAMS: Record<Exclude<SetupType, 'NONE'>, SetupParams> = {
-  // target ≈ expected absolute move over the hold (ATR·√days ≈ 2.2 ATR for 5 sessions); stop ≈ 1.25 ATR
-  BREAKOUT: { stopAtr: 1.25, targetAtr: 2.0, holdDays: 5 },
-  TREND_CONTINUATION: { stopAtr: 1.3, targetAtr: 2.2, holdDays: 7 },
-  PULLBACK: { stopAtr: 1.1, targetAtr: 1.8, holdDays: 5 },
-  REVERSAL: { stopAtr: 1.1, targetAtr: 1.8, holdDays: 5 },
+  // 10 working days (2 weeks) short-term swing setups calibrated for >= 15% target potential
+  VCP_BREAKOUT: { stopAtr: 1.4, targetAtr: 3.8, holdDays: 10, minTargetPct: 15.0, maxRiskPct: 5.5 },
+  STAGE2_PULLBACK: { stopAtr: 1.3, targetAtr: 3.4, holdDays: 10, minTargetPct: 12.5, maxRiskPct: 4.8 },
+  BREAKOUT: { stopAtr: 1.4, targetAtr: 3.8, holdDays: 10, minTargetPct: 15.0, maxRiskPct: 5.5 },
+  PULLBACK: { stopAtr: 1.3, targetAtr: 3.2, holdDays: 10, minTargetPct: 12.0, maxRiskPct: 4.8 },
+  TREND_CONTINUATION: { stopAtr: 1.4, targetAtr: 3.6, holdDays: 10, minTargetPct: 14.0, maxRiskPct: 5.2 },
+  REVERSAL: { stopAtr: 1.2, targetAtr: 3.0, holdDays: 10, minTargetPct: 12.0, maxRiskPct: 4.5 },
 };
 
 /**
- * Entry = today's close (the order is assumed to be placed for next open).
- * Stop  = tighter of (close − k·ATR) and the recent swing low minus a buffer.
- * Target= close + m·ATR. Risk must land between 1.5% and 8% or the idea is skipped.
+ * Entry = today's close (order placed for next open).
+ * Stop  = tighter of structural swing low (below 21-EMA) and ATR stop, capped at maxRiskPct.
+ * Target= close + m·ATR (or minTargetPct to deliver user's 15% / 30% goal).
+ * Risk/reward must land >= 2.0:1.
  */
 export function computeLevels(s: StockSnapshot, setup: SetupType, holdDaysOverride?: number): TradeLevels | null {
   if (setup === 'NONE') return null;
@@ -32,31 +37,41 @@ export function computeLevels(s: StockSnapshot, setup: SetupType, holdDaysOverri
   if (!Number.isFinite(atr) || atr <= 0) return null;
   const entry = s.close;
 
-  // swing low: lowest low of the last 5 bars is unknown here (snapshot), use today's low & priorLow proxies
-  const structuralStop = Math.min(s.low, s.ema21 * 0.985) - 0.25 * atr;
-  const atrStop = entry - p.stopAtr * atr;
-  let stop = Math.max(structuralStop, atrStop); // the tighter (higher) of the two
-  let riskPct = ((entry - stop) / entry) * 100;
-  if (riskPct < 1.5) {
-    stop = entry * (1 - 0.015);
-    riskPct = 1.5;
-  }
-  if (riskPct > 8) return null;
+  const isLongTerm = (holdDaysOverride ?? p.holdDays) >= 25;
+  const targetPct = isLongTerm ? 30.0 : Math.max(p.minTargetPct, (p.targetAtr * atr / entry) * 100);
 
-  const target = entry + p.targetAtr * atr;
+  // Structural stop: below recent low or 21-EMA buffer
+  const structuralStop = Math.min(s.low, s.ema21 * 0.985) - 0.25 * atr;
+  const atrStop = entry - (isLongTerm ? 2.0 : p.stopAtr) * atr;
+  let stop = Math.max(structuralStop, atrStop);
+
+  let riskPct = ((entry - stop) / entry) * 100;
+  const maxRisk = isLongTerm ? 7.5 : p.maxRiskPct;
+  if (riskPct < 2.0) {
+    stop = entry * (1 - 0.02);
+    riskPct = 2.0;
+  } else if (riskPct > maxRisk) {
+    stop = entry * (1 - maxRisk / 100);
+    riskPct = maxRisk;
+  }
+
+  const target = entry * (1 + targetPct / 100);
   const rewardPct = ((target - entry) / entry) * 100;
   const rr = rewardPct / riskPct;
-  if (rr < 1.1) return null;
+  if (rr < 1.8) return null;
 
   return {
     entry: round2(entry),
-    entryLow: tick(entry * 0.997),
-    entryHigh: tick(entry * 1.005),
+    entryLow: tick(entry * 0.995),
+    entryHigh: tick(entry * 1.008),
     stopLoss: tick(stop),
     target: tick(target),
+    breakevenTrigger: tick(entry * 1.07), // At +7% gain, move stop to entry (Breakeven Shield)
+    target2: tick(target * 1.08), // Runner target
     riskPct: round2(riskPct),
     rewardPct: round2(rewardPct),
     riskReward: round2(rr),
     holdDays: holdDaysOverride ?? p.holdDays,
+    horizon: isLongTerm ? 'LONG_TERM' : 'SHORT_TERM',
   };
 }
