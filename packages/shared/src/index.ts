@@ -622,17 +622,37 @@ export interface DailyRunResultDto {
   durationMs: number;
 }
 
+export interface IpoSubscriptionDay {
+  day: string;       // 'Day 1' | 'Day 2' | 'Day 3'
+  overall: number;   // overall subscription times
+  qib: number;
+  nni: number;
+  retail: number;
+}
+
 export interface IpoDto {
   symbol: string;
   companyName: string;
   openDate: string;
   closeDate: string;
   priceBand: string;
+  issueSize: string;        // e.g. "₹500 Cr"
   lotSize: number;
+  /** Overall / total subscription */
   qibSubscription: number;
   nniSubscription: number;
   retailSubscription: number;
+  /** Day-wise subscription trend (Day 1, Day 2, Day 3) */
+  subscriptionTrend: IpoSubscriptionDay[];
+  /** Estimated listing gain from GMP sources */
   gmpPercent: number;
+  /** IPO status: OPEN | UPCOMING | CLOSED */
+  status: 'OPEN' | 'UPCOMING' | 'CLOSED';
+  /** Days remaining to close */
+  daysToClose: number | null;
+  /** Sector of the company */
+  sector: string;
   isElite: boolean;
   eliteReasons: string[];
 }
+

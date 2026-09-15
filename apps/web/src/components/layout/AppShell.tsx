@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles, Rocket } from 'lucide-react'
+import { Activity, BarChart3, Database, FlaskConical, LayoutDashboard, ListOrdered, Sparkles, Rocket, Star } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useDataStatus, useLiveMarket, useMarketOverview } from '../../lib/api'
@@ -10,6 +10,7 @@ import { Badge } from '../ui'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/elite', label: 'Elite Pick', icon: Star, highlight: true },
   { to: '/picks', label: 'Daily Picks', icon: ListOrdered },
   { to: '/analyst', label: 'Stock Analyst', icon: Sparkles },
   { to: '/performance', label: 'Performance', icon: BarChart3 },
@@ -41,11 +42,17 @@ export function AppShell() {
               className={({ isActive }) =>
                 clsx(
                   'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:scale-[1.02]',
-                  isActive ? 'bg-white/60 text-brand-700 shadow-sm border border-white/80' : 'text-ink-600 hover:bg-white/40 hover:text-ink-900',
+                  isActive
+                    ? n.highlight
+                      ? 'bg-amber-50 text-amber-700 shadow-sm border border-amber-200'
+                      : 'bg-white/60 text-brand-700 shadow-sm border border-white/80'
+                    : n.highlight
+                      ? 'text-amber-600 hover:bg-amber-50/60 hover:text-amber-800'
+                      : 'text-ink-600 hover:bg-white/40 hover:text-ink-900',
                 )
               }
             >
-              <n.icon size={17} />
+              <n.icon size={17} className={n.highlight ? 'fill-amber-400' : undefined} />
               {n.label}
             </NavLink>
           ))}
