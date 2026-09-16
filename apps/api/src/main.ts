@@ -18,7 +18,7 @@ async function bootstrap() {
     .build();
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, doc));
 
-  await app.listen(cfg.port);
-  new Logger('Bootstrap').log(`API listening on http://localhost:${cfg.port}/api  (docs at /docs, db=${cfg.db.type})`);
+  await app.listen(cfg.port, '0.0.0.0');
+  new Logger('Bootstrap').log(`API listening on http://127.0.0.1:${cfg.port}/api  (docs at /docs, db=${cfg.db.type})`);
 }
 await bootstrap();
