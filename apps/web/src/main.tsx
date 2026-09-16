@@ -15,6 +15,7 @@ const StockPage = lazy(() => import('./pages/StockPage').then((m) => ({ default:
 const AnalystPage = lazy(() => import('./pages/AnalystPage').then((m) => ({ default: m.AnalystPage })))
 const IposPage = lazy(() => import('./pages/IposPage').then((m) => ({ default: m.IposPage })))
 const ElitePage = lazy(() => import('./pages/ElitePage').then((m) => ({ default: m.ElitePage })))
+const CircuitPage = lazy(() => import('./pages/CircuitPage').then((m) => ({ default: m.CircuitPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } },
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
           <Routes>
             <Route element={<AppShell />}>
               <Route index element={<DashboardPage />} />
+              <Route path="circuit" element={<CircuitPage />} />
               <Route path="elite" element={<ElitePage />} />
               <Route path="picks" element={<PicksPage />} />
               <Route path="performance" element={<PerformancePage />} />

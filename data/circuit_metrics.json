@@ -1,0 +1,96 @@
+{
+  "modelType": "LightGBM Multi-Class Classifier",
+  "validationMethod": "Strict Time-Based Walk-Forward (3 Folds)",
+  "evaluatedAt": "2026-09-15T15:35:46.873420",
+  "folds": [
+    {
+      "fold": 1,
+      "trainPeriod": "2024-01-18 to 2025-05-19",
+      "testPeriod": "2025-05-20 to 2025-11-24",
+      "trainSamples": 86343,
+      "testSamples": 37519,
+      "logLoss": 0.3583,
+      "ucRocAuc": 0.6693,
+      "lcRocAuc": 0.7258,
+      "ucBrier": 0.0488,
+      "lcBrier": 0.0203
+    },
+    {
+      "fold": 2,
+      "trainPeriod": "2024-01-18 to 2025-11-24",
+      "testPeriod": "2025-11-25 to 2026-04-21",
+      "trainSamples": 123862,
+      "testSamples": 29181,
+      "logLoss": 0.492,
+      "ucRocAuc": 0.733,
+      "lcRocAuc": 0.7954,
+      "ucBrier": 0.0781,
+      "lcBrier": 0.0312
+    },
+    {
+      "fold": 3,
+      "trainPeriod": "2024-01-18 to 2026-04-21",
+      "testPeriod": "2026-04-22 to 2026-09-09",
+      "trainSamples": 153043,
+      "testSamples": 29382,
+      "logLoss": 0.5297,
+      "ucRocAuc": 0.7003,
+      "lcRocAuc": 0.7619,
+      "ucBrier": 0.0742,
+      "lcBrier": 0.0371
+    }
+  ],
+  "averageLogLoss": 0.46,
+  "averageUcRocAuc": 0.7009,
+  "averageLcRocAuc": 0.761,
+  "featureImportances": [
+    {
+      "feature": "nifty_return",
+      "importance": 1424.0
+    },
+    {
+      "feature": "market_volatility",
+      "importance": 1347.0
+    },
+    {
+      "feature": "atr_pct",
+      "importance": 911.0
+    },
+    {
+      "feature": "rvol",
+      "importance": 833.0
+    },
+    {
+      "feature": "vol_accel",
+      "importance": 731.0
+    },
+    {
+      "feature": "delivery_pct",
+      "importance": 725.0
+    },
+    {
+      "feature": "sector_return",
+      "importance": 725.0
+    },
+    {
+      "feature": "dist_to_lc",
+      "importance": 715.0
+    },
+    {
+      "feature": "gap_pct",
+      "importance": 691.0
+    },
+    {
+      "feature": "dist_to_uc",
+      "importance": 690.0
+    },
+    {
+      "feature": "ema_spread",
+      "importance": 669.0
+    },
+    {
+      "feature": "dist_day_high",
+      "importance": 643.0
+    }
+  ]
+}

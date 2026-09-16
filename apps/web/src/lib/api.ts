@@ -186,3 +186,94 @@ export const useDeleteBacktest = () => {
 }
 
 export const useUpcomingIpos = () => useQuery({ queryKey: ['ipos', 'upcoming'], queryFn: () => api.get<IpoDto[]>('/ipos/upcoming') })
+
+export interface CircuitPredictionItem {
+  symbol: string
+  name: string
+  sector: string
+  date: string
+  close: number
+  prevClose: number
+  changePct: number
+  priceBandPct: number
+  ucProbability: number
+  lcProbability: number
+  noCircuitProbability: number
+  distanceToUc: number
+  distanceToLc: number
+  rvol: number
+  gapPct: number
+  rsi14: number
+  sectorRs: number
+  vwapDistance: number
+  signals: string[]
+}
+
+export interface CircuitPredictionsPayload {
+  date: string
+  generatedAt: string
+  totalAnalyzed: number
+  summary: {
+    highUcCandidates: number
+    highLcCandidates: number
+    avgUcProbability: number
+    avgLcProbability: number
+  }
+  modelMetrics: {
+    validationMethod: string
+    averageUcRocAuc: number
+    averageLcRocAuc: number
+    averageLogLoss: number
+    topFeatures: Array<{ feature: string; importance: number }>
+  }
+  predictions: CircuitPredictionItem[]
+}
+
+export interface CircuitMetricsPayload {
+  modelType: string
+  validationMethod: string
+  evaluatedAt: string
+  folds: Array<{
+    fold: number
+    trainPeriod: string
+    testPeriod: string
+    trainSamples: number
+    testSamples: number
+    logLoss: number
+    ucRocAuc: number
+    lcRocAuc: number
+    ucBrier: number
+    lcBrier: number
+  }>
+  averageLogLoss: number
+  averageUcRocAuc: number
+  averageLcRocAuc: number
+  featureImportances: Array<{ feature: string; importance: number }>
+}
+
+export const useCircuitPredictions = (params?: {
+  band?: number
+  minProb?: number
+  sector?: string
+  targetClass?: 'uc' | 'lc'
+  search?: string
+  limit?: number
+}) =>
+  useQuery({
+    queryKey: ['circuit', 'predictions', params],
+    queryFn: () => api.get<CircuitPredictionsPayload>(`/circuit/predictions${qs(params ?? {})}`),
+  })
+
+export const useCircuitMetrics = () =>
+  useQuery({
+    queryKey: ['circuit', 'metrics'],
+    queryFn: () => api.get<CircuitMetricsPayload>('/circuit/metrics'),
+  })
+
+export const useTrainCircuitModel = () => {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: (sample?: number) => api.post<{ status: string; message: string }>(`/circuit/run${qs({ sample })}`),
+    onSuccess: () => invalidate('circuit'),
+  })
+}

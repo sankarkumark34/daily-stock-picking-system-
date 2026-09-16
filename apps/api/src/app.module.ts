@@ -8,10 +8,11 @@ import { DatabaseModule } from './database/database.module.js';
 import { EngineModule } from './engine/engine.module.js';
 import { LiveModule } from './live/live.module.js';
 import { IposModule } from './ipos/ipos.module.js';
+import { CircuitModule } from './circuit/circuit.module.js';
 import { SchedulerService } from './scheduler/scheduler.service.js';
 
 @Module({
-  imports: [DatabaseModule, ScheduleModule.forRoot(), DataModule, EngineModule, BacktestModule, ApiModule, AnalystModule, LiveModule, IposModule],
+  imports: [DatabaseModule, ScheduleModule.forRoot(), DataModule, EngineModule, BacktestModule, ApiModule, AnalystModule, LiveModule, IposModule, CircuitModule],
   providers: [SchedulerService],
 
 })
