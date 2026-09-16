@@ -89,34 +89,34 @@ const RANK_CONFIG = [
   {
     medal: '🥇',
     label: '1st',
-    headerGrad: 'from-amber-900 via-yellow-800 to-amber-700',
-    ringColor: '#f59e0b',
-    border: 'border-amber-300',
-    badgeBg: 'bg-amber-400/20 text-amber-200 ring-amber-400/30',
+    headerGrad: 'from-amber-500/10 via-amber-400/5 to-transparent',
+    ringColor: '#d97706',
+    border: 'border-amber-200',
+    badgeBg: 'bg-amber-100 text-amber-800 ring-amber-300',
   },
   {
     medal: '🥈',
     label: '2nd',
-    headerGrad: 'from-indigo-900 via-blue-900 to-indigo-800',
+    headerGrad: 'from-indigo-500/10 via-blue-400/5 to-transparent',
     ringColor: '#6366f1',
-    border: 'border-indigo-300',
-    badgeBg: 'bg-indigo-400/20 text-indigo-200 ring-indigo-400/30',
+    border: 'border-indigo-200',
+    badgeBg: 'bg-indigo-100 text-indigo-800 ring-indigo-300',
   },
   {
     medal: '🥉',
     label: '3rd',
-    headerGrad: 'from-emerald-900 via-teal-900 to-emerald-800',
-    ringColor: '#10b981',
-    border: 'border-emerald-300',
-    badgeBg: 'bg-emerald-400/20 text-emerald-200 ring-emerald-400/30',
+    headerGrad: 'from-emerald-500/10 via-teal-400/5 to-transparent',
+    ringColor: '#059669',
+    border: 'border-emerald-200',
+    badgeBg: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
   },
   {
     medal: '⭐',
     label: '4th',
-    headerGrad: 'from-violet-900 via-purple-900 to-violet-800',
-    ringColor: '#8b5cf6',
-    border: 'border-violet-300',
-    badgeBg: 'bg-violet-400/20 text-violet-200 ring-violet-400/30',
+    headerGrad: 'from-violet-500/10 via-purple-400/5 to-transparent',
+    ringColor: '#7c3aed',
+    border: 'border-violet-200',
+    badgeBg: 'bg-violet-100 text-violet-800 ring-violet-300',
   },
 ]
 
@@ -353,11 +353,11 @@ function EliteStockCard({
   const breakevenPrice = pick.breakevenTrigger ?? Math.round(pick.entry * 1.07 * 100) / 100
 
   return (
-    <div className={clsx('overflow-hidden rounded-2xl border-2 bg-white/60 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-md', cfg.border)}>
-      {/* Dark gradient header */}
-      <div className={clsx('relative bg-gradient-to-br p-4 text-white', cfg.headerGrad)}>
+    <div className={clsx('overflow-hidden rounded-2xl border bg-white/70 backdrop-blur-md shadow-xs transition-all duration-300 hover:shadow-md', cfg.border)}>
+      {/* Light gradient header */}
+      <div className={clsx('relative border-b border-ink-100 bg-gradient-to-br p-4 text-ink-900', cfg.headerGrad)}>
         {/* Decorative blob */}
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/5 blur-2xl" />
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand-500/5 blur-2xl" />
 
         <div className="flex items-start justify-between gap-3">
           {/* Left: rank + badges + symbol */}
@@ -368,15 +368,15 @@ function EliteStockCard({
               </span>
               <Badge tone={setupTone(pick.setup)}>{setupLabel(pick.setup)}</Badge>
               {isSprint ? (
-                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">⚡ {pick.holdDays}d</span>
+                <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink-700 ring-1 ring-ink-200">⚡ {pick.holdDays}d</span>
               ) : (
-                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/80">🎯 {pick.holdDays}d</span>
+                <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-ink-700 ring-1 ring-ink-200">🎯 {pick.holdDays}d</span>
               )}
             </div>
-            <p className="text-3xl font-black tracking-tight text-white truncate">{pick.symbol}</p>
-            <p className="text-xs text-white/50 truncate mt-0.5">{pick.name ?? pick.sector}</p>
+            <p className="text-3xl font-black tracking-tight text-ink-900 truncate">{pick.symbol}</p>
+            <p className="text-xs text-ink-500 truncate mt-0.5">{pick.name ?? pick.sector}</p>
             <div className="mt-2">
-              <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80 ring-1 ring-white/20">
+              <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-ink-700 ring-1 ring-ink-200">
                 {pick.sector}
               </span>
             </div>
@@ -385,8 +385,8 @@ function EliteStockCard({
           {/* Right: Score ring */}
           <div className="shrink-0 flex flex-col items-center gap-1">
             <MiniScoreRing score={pick.score} color={cfg.ringColor} />
-            <p className="text-[10px] text-white/50 font-semibold uppercase tracking-wide">Score</p>
-            <p className="text-xs text-white/60">Conf. {pick.confidence}%</p>
+            <p className="text-[10px] text-ink-500 font-semibold uppercase tracking-wide">Score</p>
+            <p className="text-xs text-ink-600">Conf. {pick.confidence}%</p>
           </div>
         </div>
 
@@ -512,13 +512,13 @@ function EliteStockCard({
 }
 
 function MiniScoreRing({ score, color }: { score: number; color: string }) {
-  const r = 26
+  const r = 24
   const circ = 2 * Math.PI * r
   const offset = circ - (score / 100) * circ
   return (
-    <div className="relative h-16 w-16 flex items-center justify-center">
+    <div className="relative flex h-14 w-14 items-center justify-center">
       <svg className="absolute inset-0 -rotate-90" viewBox="0 0 60 60">
-        <circle cx="30" cy="30" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+        <circle cx="30" cy="30" r={r} fill="none" stroke="#e2e8f0" strokeWidth="5" />
         <circle
           cx="30" cy="30" r={r}
           fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
@@ -526,19 +526,19 @@ function MiniScoreRing({ score, color }: { score: number; color: string }) {
           style={{ transition: 'stroke-dashoffset 1s ease' }}
         />
       </svg>
-      <span className="text-xl font-black text-white tnum">{Math.round(score)}</span>
+      <span className="text-xl font-black text-ink-900 tnum">{Math.round(score)}</span>
     </div>
   )
 }
 
 function MiniStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'up' | 'down' }) {
   return (
-    <div className="rounded-lg bg-white/10 p-2 backdrop-blur-sm">
-      <p className="text-[9px] font-semibold uppercase tracking-wide text-white/40">{label}</p>
-      <p className={clsx('text-sm font-bold tnum', tone === 'up' ? 'text-emerald-300' : tone === 'down' ? 'text-rose-300' : 'text-white')}>
+    <div className="rounded-lg bg-white/90 p-2 shadow-2xs ring-1 ring-ink-100 backdrop-blur-sm">
+      <p className="text-[9px] font-semibold uppercase tracking-wide text-ink-500">{label}</p>
+      <p className={clsx('text-sm font-bold tnum', tone === 'up' ? 'text-up-700' : tone === 'down' ? 'text-down-700' : 'text-ink-900')}>
         {value}
       </p>
-      {sub && <p className="text-[10px] text-white/40 tnum">{sub}</p>}
+      {sub && <p className="text-[10px] text-ink-500 tnum">{sub}</p>}
     </div>
   )
 }

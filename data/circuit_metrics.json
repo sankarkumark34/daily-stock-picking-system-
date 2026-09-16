@@ -1,96 +1,96 @@
 {
   "modelType": "LightGBM Multi-Class Classifier",
   "validationMethod": "Strict Time-Based Walk-Forward (3 Folds)",
-  "evaluatedAt": "2026-09-15T15:35:46.873420",
+  "evaluatedAt": "2026-09-16T06:14:33.711521",
   "folds": [
     {
       "fold": 1,
-      "trainPeriod": "2024-01-18 to 2025-05-19",
-      "testPeriod": "2025-05-20 to 2025-11-24",
-      "trainSamples": 86343,
-      "testSamples": 37519,
-      "logLoss": 0.3583,
-      "ucRocAuc": 0.6693,
-      "lcRocAuc": 0.7258,
-      "ucBrier": 0.0488,
-      "lcBrier": 0.0203
+      "trainPeriod": "2023-01-19 to 2024-11-14",
+      "testPeriod": "2024-11-18 to 2025-08-06",
+      "trainSamples": 113110,
+      "testSamples": 49822,
+      "logLoss": 0.5222,
+      "ucRocAuc": 0.6644,
+      "lcRocAuc": 0.7235,
+      "ucBrier": 0.0883,
+      "lcBrier": 0.03
     },
     {
       "fold": 2,
-      "trainPeriod": "2024-01-18 to 2025-11-24",
-      "testPeriod": "2025-11-25 to 2026-04-21",
-      "trainSamples": 123862,
-      "testSamples": 29181,
-      "logLoss": 0.492,
-      "ucRocAuc": 0.733,
-      "lcRocAuc": 0.7954,
-      "ucBrier": 0.0781,
-      "lcBrier": 0.0312
+      "trainPeriod": "2023-01-19 to 2025-08-06",
+      "testPeriod": "2025-08-07 to 2026-02-23",
+      "trainSamples": 162932,
+      "testSamples": 39730,
+      "logLoss": 0.416,
+      "ucRocAuc": 0.7354,
+      "lcRocAuc": 0.7753,
+      "ucBrier": 0.0548,
+      "lcBrier": 0.0269
     },
     {
       "fold": 3,
-      "trainPeriod": "2024-01-18 to 2026-04-21",
-      "testPeriod": "2026-04-22 to 2026-09-09",
-      "trainSamples": 153043,
-      "testSamples": 29382,
-      "logLoss": 0.5297,
-      "ucRocAuc": 0.7003,
-      "lcRocAuc": 0.7619,
-      "ucBrier": 0.0742,
-      "lcBrier": 0.0371
+      "trainPeriod": "2023-01-19 to 2026-02-23",
+      "testPeriod": "2026-02-24 to 2026-09-10",
+      "trainSamples": 202662,
+      "testSamples": 40428,
+      "logLoss": 0.632,
+      "ucRocAuc": 0.6999,
+      "lcRocAuc": 0.8086,
+      "ucBrier": 0.1002,
+      "lcBrier": 0.0424
     }
   ],
-  "averageLogLoss": 0.46,
-  "averageUcRocAuc": 0.7009,
-  "averageLcRocAuc": 0.761,
+  "averageLogLoss": 0.5234,
+  "averageUcRocAuc": 0.6999,
+  "averageLcRocAuc": 0.7691,
   "featureImportances": [
     {
       "feature": "nifty_return",
-      "importance": 1424.0
+      "importance": 1506.0
     },
     {
       "feature": "market_volatility",
-      "importance": 1347.0
+      "importance": 1334.0
     },
     {
       "feature": "atr_pct",
-      "importance": 911.0
-    },
-    {
-      "feature": "rvol",
-      "importance": 833.0
-    },
-    {
-      "feature": "vol_accel",
-      "importance": 731.0
+      "importance": 1023.0
     },
     {
       "feature": "delivery_pct",
-      "importance": 725.0
+      "importance": 848.0
     },
     {
-      "feature": "sector_return",
-      "importance": 725.0
+      "feature": "rvol",
+      "importance": 838.0
     },
     {
-      "feature": "dist_to_lc",
-      "importance": 715.0
+      "feature": "vol_accel",
+      "importance": 738.0
     },
     {
       "feature": "gap_pct",
-      "importance": 691.0
+      "importance": 737.0
     },
     {
-      "feature": "dist_to_uc",
-      "importance": 690.0
+      "feature": "sector_return",
+      "importance": 726.0
+    },
+    {
+      "feature": "dist_to_lc",
+      "importance": 686.0
     },
     {
       "feature": "ema_spread",
-      "importance": 669.0
+      "importance": 673.0
     },
     {
       "feature": "dist_day_high",
-      "importance": 643.0
+      "importance": 663.0
+    },
+    {
+      "feature": "dist_to_uc",
+      "importance": 659.0
     }
   ]
 }

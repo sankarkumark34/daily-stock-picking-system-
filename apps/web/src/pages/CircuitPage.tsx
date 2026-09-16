@@ -5,16 +5,12 @@ import {
   TrendingUp,
   TrendingDown,
   ShieldAlert,
-  SlidersHorizontal,
   Search,
   Sparkles,
   BarChart3,
   RefreshCw,
   Layers,
   ChevronRight,
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
   CheckCircle2,
 } from 'lucide-react'
 import { Badge, Card, Button, Skeleton } from '../components/ui'
@@ -33,7 +29,7 @@ export function CircuitPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showModelDetails, setShowModelDetails] = useState(false)
 
-  const { data: circuitData, isLoading, isError, refetch } = useCircuitPredictions()
+  const { data: circuitData, isLoading } = useCircuitPredictions()
   const { data: metricsData } = useCircuitMetrics()
   const trainMutation = useTrainCircuitModel()
 
@@ -74,14 +70,14 @@ export function CircuitPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-ink-900 via-brand-950 to-ink-950 p-6 shadow-2xl backdrop-blur-md">
+      <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-white/70 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
         <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200">
                 <Zap className="h-5 w-5" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Circuit Radar (ML Predictor)</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-ink-900">Circuit Radar (ML Predictor)</h1>
               <Badge tone="info" size="sm" className="font-mono text-xs">
                 LightGBM 3-Class
               </Badge>
@@ -89,21 +85,20 @@ export function CircuitPage() {
                 Time-Based Walk-Forward
               </Badge>
             </div>
-            <p className="max-w-2xl text-sm text-ink-300">
-              Calibrated probabilistic modeling of daily <strong className="text-up-400">Upper Circuit (UC)</strong> and{' '}
-              <strong className="text-down-400">Lower Circuit (LC)</strong> touches using intraday momentum, RVOL, price
+            <p className="max-w-2xl text-sm text-ink-600">
+              Calibrated probabilistic modeling of daily <strong className="text-up-700">Upper Circuit (UC)</strong> and{' '}
+              <strong className="text-down-700">Lower Circuit (LC)</strong> touches using intraday momentum, RVOL, price
               bands, and market regime context.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => setShowModelDetails(!showModelDetails)}
-              className="border-white/20 bg-white/5 text-white hover:bg-white/10"
             >
-              <BarChart3 className="mr-1.5 h-4 w-4 text-brand-400" />
+              <BarChart3 className="mr-1.5 h-4 w-4 text-brand-600" />
               {showModelDetails ? 'Hide Validation' : 'Model Scorecard'}
             </Button>
             <Button
@@ -111,7 +106,6 @@ export function CircuitPage() {
               size="sm"
               disabled={trainMutation.isPending}
               onClick={() => trainMutation.mutate(300)}
-              className="bg-brand-600 hover:bg-brand-500"
             >
               <RefreshCw className={`mr-1.5 h-4 w-4 ${trainMutation.isPending ? 'animate-spin' : ''}`} />
               {trainMutation.isPending ? 'Training Model...' : 'Retrain ML Engine'}
@@ -120,28 +114,28 @@ export function CircuitPage() {
         </div>
 
         {/* Quick Stats Bar */}
-        <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 border-t border-white/10 pt-4 sm:grid-cols-4 md:grid-cols-5">
-          <div className="rounded-lg bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-400">Stocks Analyzed</p>
-            <p className="mt-1 text-xl font-bold text-white">{circuitData?.totalAnalyzed ?? '—'}</p>
+        <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-4 md:grid-cols-5">
+          <div className="rounded-xl bg-white/80 p-3 ring-1 ring-ink-200/60 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-500">Stocks Analyzed</p>
+            <p className="mt-1 text-xl font-bold text-ink-900">{circuitData?.totalAnalyzed ?? '—'}</p>
           </div>
-          <div className="rounded-lg bg-up-950/30 p-3 ring-1 ring-up-500/20">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-up-400">Avg UC Probability</p>
-            <p className="mt-1 text-xl font-bold text-up-300">{circuitData?.summary.avgUcProbability ?? 0}%</p>
+          <div className="rounded-xl bg-up-50/80 p-3 ring-1 ring-up-200/60 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-up-700">Avg UC Probability</p>
+            <p className="mt-1 text-xl font-bold text-up-700">{circuitData?.summary.avgUcProbability ?? 0}%</p>
           </div>
-          <div className="rounded-lg bg-down-950/30 p-3 ring-1 ring-down-500/20">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-down-400">Avg LC Probability</p>
-            <p className="mt-1 text-xl font-bold text-down-300">{circuitData?.summary.avgLcProbability ?? 0}%</p>
+          <div className="rounded-xl bg-down-50/80 p-3 ring-1 ring-down-200/60 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-down-700">Avg LC Probability</p>
+            <p className="mt-1 text-xl font-bold text-down-700">{circuitData?.summary.avgLcProbability ?? 0}%</p>
           </div>
-          <div className="rounded-lg bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-400">Out-of-Sample UC AUC</p>
-            <p className="mt-1 text-xl font-bold text-amber-300">
+          <div className="rounded-xl bg-white/80 p-3 ring-1 ring-ink-200/60 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-500">Out-of-Sample UC AUC</p>
+            <p className="mt-1 text-xl font-bold text-amber-600">
               {metricsData?.averageUcRocAuc ? metricsData.averageUcRocAuc.toFixed(3) : '0.701'}
             </p>
           </div>
-          <div className="rounded-lg bg-white/5 p-3 ring-1 ring-white/10">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-400">Out-of-Sample LC AUC</p>
-            <p className="mt-1 text-xl font-bold text-violet-300">
+          <div className="rounded-xl bg-white/80 p-3 ring-1 ring-ink-200/60 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-ink-500">Out-of-Sample LC AUC</p>
+            <p className="mt-1 text-xl font-bold text-violet-600">
               {metricsData?.averageLcRocAuc ? metricsData.averageLcRocAuc.toFixed(3) : '0.761'}
             </p>
           </div>
@@ -153,16 +147,16 @@ export function CircuitPage() {
         <Card
           title="🔬 Walk-Forward Validation Scorecard (No Time Leakage)"
           subtitle={`Evaluated via 3 sequential out-of-sample forward test windows · Log Loss: ${metricsData.averageLogLoss.toFixed(4)}`}
-          className="border border-brand-500/30 bg-ink-900/90 shadow-xl"
+          className="border border-brand-200/80 shadow-md"
         >
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-500">
                 Walk-Forward Fold Results
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-white/10">
+              <div className="overflow-x-auto rounded-lg border border-ink-200">
                 <table className="w-full text-left text-xs">
-                  <thead className="border-b border-white/10 bg-white/5 font-semibold text-ink-300">
+                  <thead className="border-b border-ink-200 bg-ink-50 font-semibold text-ink-600">
                     <tr>
                       <th className="p-2.5">Fold</th>
                       <th className="p-2.5">Test Window</th>
@@ -171,14 +165,14 @@ export function CircuitPage() {
                       <th className="p-2.5">Log Loss</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-ink-200">
+                  <tbody className="divide-y divide-ink-100 text-ink-800">
                     {metricsData.folds.map((f) => (
-                      <tr key={f.fold} className="hover:bg-white/5">
-                        <td className="p-2.5 font-mono font-bold text-amber-400">Fold {f.fold}</td>
-                        <td className="p-2.5 font-mono text-[11px] text-ink-400">{f.testPeriod}</td>
-                        <td className="p-2.5 font-mono font-semibold text-up-400">{f.ucRocAuc.toFixed(3)}</td>
-                        <td className="p-2.5 font-mono font-semibold text-down-400">{f.lcRocAuc.toFixed(3)}</td>
-                        <td className="p-2.5 font-mono text-ink-300">{f.logLoss.toFixed(4)}</td>
+                      <tr key={f.fold} className="hover:bg-brand-50/30">
+                        <td className="p-2.5 font-mono font-bold text-amber-700">Fold {f.fold}</td>
+                        <td className="p-2.5 font-mono text-[11px] text-ink-600">{f.testPeriod}</td>
+                        <td className="p-2.5 font-mono font-semibold text-up-700">{f.ucRocAuc.toFixed(3)}</td>
+                        <td className="p-2.5 font-mono font-semibold text-down-700">{f.lcRocAuc.toFixed(3)}</td>
+                        <td className="p-2.5 font-mono text-ink-600">{f.logLoss.toFixed(4)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -187,17 +181,17 @@ export function CircuitPage() {
             </div>
 
             <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-400">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-500">
                 Top Predictive Signals (LightGBM Feature Importance)
               </h3>
               <div className="space-y-2">
                 {metricsData.featureImportances.slice(0, 6).map((feat, idx) => (
                   <div key={feat.feature} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="font-mono text-ink-300">
+                    <span className="font-mono text-ink-700">
                       {idx + 1}. {feat.feature}
                     </span>
                     <div className="flex w-36 items-center gap-2">
-                      <div className="h-1.5 flex-1 rounded-full bg-white/10">
+                      <div className="h-1.5 flex-1 rounded-full bg-ink-100">
                         <div
                           className="h-1.5 rounded-full bg-brand-500"
                           style={{
@@ -205,7 +199,7 @@ export function CircuitPage() {
                           }}
                         />
                       </div>
-                      <span className="w-10 text-right font-mono text-[11px] text-ink-400">
+                      <span className="w-10 text-right font-mono text-[11px] text-ink-500">
                         {Math.round(feat.importance)}
                       </span>
                     </div>
@@ -219,34 +213,34 @@ export function CircuitPage() {
 
       {/* Top Hero Candidate Card */}
       {topPick && (
-        <section className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-ink-900 via-amber-950/20 to-ink-950 p-6 shadow-xl backdrop-blur-md">
+        <section className="relative overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-white/90 via-amber-50/30 to-white/90 p-6 shadow-sm backdrop-blur-md">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/30">
-                  <Sparkles className="h-3 w-3" /> #1 Circuit Alert
+                <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-300">
+                  <Sparkles className="h-3 w-3 text-amber-600" /> #1 Circuit Alert
                 </span>
                 <Badge tone="info" size="sm">
                   {topPick.priceBandPct}% Band
                 </Badge>
-                <span className="text-xs text-ink-400">{topPick.sector}</span>
+                <span className="text-xs text-ink-500">{topPick.sector}</span>
               </div>
               <div className="flex items-baseline gap-3">
                 <Link
                   to={`/stocks/${topPick.symbol}`}
-                  className="text-3xl font-extrabold tracking-tight text-white hover:text-amber-400"
+                  className="text-3xl font-extrabold tracking-tight text-ink-900 hover:text-brand-600"
                 >
                   {topPick.symbol}
                 </Link>
-                <span className="text-sm text-ink-400">{topPick.name}</span>
+                <span className="text-sm text-ink-500">{topPick.name}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {topPick.signals.map((sig) => (
                   <span
                     key={sig}
-                    className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2 py-0.5 text-xs font-medium text-ink-300 ring-1 ring-white/10"
+                    className="inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-0.5 text-xs font-medium text-ink-700 ring-1 ring-ink-200"
                   >
-                    <CheckCircle2 className="h-3 w-3 text-amber-400" />
+                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                     {sig}
                   </span>
                 ))}
@@ -254,21 +248,21 @@ export function CircuitPage() {
             </div>
 
             {/* Probability Spotlight Pill */}
-            <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/40 p-4 min-w-[280px]">
+            <div className="flex flex-col gap-2 rounded-xl border border-ink-200/80 bg-white/80 p-4 min-w-[280px] shadow-xs">
               <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-up-400">UC {topPick.ucProbability}%</span>
-                <span className="text-ink-400">Normal {topPick.noCircuitProbability}%</span>
-                <span className="text-down-400">LC {topPick.lcProbability}%</span>
+                <span className="text-up-700">UC {topPick.ucProbability}%</span>
+                <span className="text-ink-500">Normal {topPick.noCircuitProbability}%</span>
+                <span className="text-down-700">LC {topPick.lcProbability}%</span>
               </div>
               {/* Tri-color Probability Bar */}
-              <div className="h-3.5 w-full overflow-hidden rounded-full bg-ink-800 flex">
+              <div className="h-3.5 w-full overflow-hidden rounded-full bg-ink-100 flex">
                 <div
-                  className="bg-gradient-to-r from-up-500 to-emerald-400 transition-all"
+                  className="bg-gradient-to-r from-up-500 to-emerald-500 transition-all"
                   style={{ width: `${topPick.ucProbability}%` }}
                   title={`UC Probability: ${topPick.ucProbability}%`}
                 />
                 <div
-                  className="bg-ink-600 transition-all"
+                  className="bg-ink-200 transition-all"
                   style={{ width: `${topPick.noCircuitProbability}%` }}
                   title={`No Circuit: ${topPick.noCircuitProbability}%`}
                 />
@@ -278,7 +272,7 @@ export function CircuitPage() {
                   title={`LC Probability: ${topPick.lcProbability}%`}
                 />
               </div>
-              <div className="flex items-center justify-between pt-1 text-[11px] text-ink-400">
+              <div className="flex items-center justify-between pt-1 text-[11px] text-ink-500">
                 <span>Dist to UC: {topPick.distanceToUc}%</span>
                 <span>RVOL: {topPick.rvol}x</span>
                 <span>Gap: {topPick.gapPct > 0 ? `+${topPick.gapPct}%` : `${topPick.gapPct}%`}</span>
@@ -289,15 +283,15 @@ export function CircuitPage() {
       )}
 
       {/* Control Filters */}
-      <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-ink-900/60 p-4 backdrop-blur-md md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-white/80 bg-white/60 p-4 backdrop-blur-md shadow-xs md:flex-row md:items-center md:justify-between">
         {/* Class Selection Tabs */}
-        <div className="flex items-center rounded-lg bg-ink-950 p-1 ring-1 ring-white/10">
+        <div className="flex items-center rounded-lg bg-ink-100/80 p-1 ring-1 ring-ink-200/70">
           <button
             onClick={() => setActiveTab('uc')}
             className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
               activeTab === 'uc'
-                ? 'bg-up-600 text-white shadow-sm'
-                : 'text-ink-400 hover:text-white'
+                ? 'bg-up-600 text-white shadow-xs'
+                : 'text-ink-600 hover:text-ink-900 hover:bg-white/60'
             }`}
           >
             <TrendingUp className="h-3.5 w-3.5" />
@@ -307,8 +301,8 @@ export function CircuitPage() {
             onClick={() => setActiveTab('lc')}
             className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
               activeTab === 'lc'
-                ? 'bg-down-600 text-white shadow-sm'
-                : 'text-ink-400 hover:text-white'
+                ? 'bg-down-600 text-white shadow-xs'
+                : 'text-ink-600 hover:text-ink-900 hover:bg-white/60'
             }`}
           >
             <TrendingDown className="h-3.5 w-3.5" />
@@ -318,8 +312,8 @@ export function CircuitPage() {
             onClick={() => setActiveTab('all')}
             className={`flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-semibold transition ${
               activeTab === 'all'
-                ? 'bg-brand-600 text-white shadow-sm'
-                : 'text-ink-400 hover:text-white'
+                ? 'bg-brand-600 text-white shadow-xs'
+                : 'text-ink-600 hover:text-ink-900 hover:bg-white/60'
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
@@ -330,12 +324,12 @@ export function CircuitPage() {
         {/* Filter dropdowns */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Band filter */}
-          <div className="flex items-center gap-1 text-xs text-ink-400">
+          <div className="flex items-center gap-1 text-xs text-ink-600">
             <span>Band:</span>
             <select
               value={selectedBand}
               onChange={(e) => setSelectedBand(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-              className="rounded-lg border border-white/10 bg-ink-950 px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-xs text-ink-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40"
             >
               <option value="ALL">All Bands</option>
               <option value="20">20% Band</option>
@@ -346,12 +340,12 @@ export function CircuitPage() {
           </div>
 
           {/* Min probability */}
-          <div className="flex items-center gap-1 text-xs text-ink-400">
+          <div className="flex items-center gap-1 text-xs text-ink-600">
             <span>Min Prob:</span>
             <select
               value={minProb}
               onChange={(e) => setMinProb(Number(e.target.value))}
-              className="rounded-lg border border-white/10 bg-ink-950 px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-xs text-ink-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40"
             >
               <option value="10">≥ 10%</option>
               <option value="20">≥ 20%</option>
@@ -362,12 +356,12 @@ export function CircuitPage() {
           </div>
 
           {/* Sector filter */}
-          <div className="flex items-center gap-1 text-xs text-ink-400">
+          <div className="flex items-center gap-1 text-xs text-ink-600">
             <span>Sector:</span>
             <select
               value={selectedSector}
               onChange={(e) => setSelectedSector(e.target.value)}
-              className="max-w-[140px] truncate rounded-lg border border-white/10 bg-ink-950 px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="max-w-[140px] truncate rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-xs text-ink-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500/40"
             >
               {sectors.map((s) => (
                 <option key={s} value={s}>
@@ -379,13 +373,13 @@ export function CircuitPage() {
 
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-500" />
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-ink-400" />
             <input
               type="text"
               placeholder="Search symbol..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-36 rounded-lg border border-white/10 bg-ink-950 py-1 pl-8 pr-2.5 text-xs text-white placeholder-ink-500 focus:w-48 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-all"
+              className="w-36 rounded-lg border border-ink-200 bg-white py-1 pl-8 pr-2.5 text-xs text-ink-900 placeholder-ink-400 shadow-xs focus:w-48 focus:outline-none focus:ring-2 focus:ring-brand-500/40 transition-all"
             />
           </div>
         </div>
@@ -395,7 +389,7 @@ export function CircuitPage() {
       <Card
         title={`Radar Targets (${filteredPredictions.length} Stocks Matching)`}
         subtitle="Ranked by calibrated probability of hitting price band on the next trading session"
-        className="overflow-hidden border border-white/10"
+        className="overflow-hidden"
         padded={false}
       >
         {isLoading ? (
@@ -406,14 +400,14 @@ export function CircuitPage() {
           </div>
         ) : filteredPredictions.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
-            <ShieldAlert className="h-10 w-10 text-ink-500" />
-            <h3 className="mt-3 text-sm font-semibold text-white">No Stocks Meet the Filter Criteria</h3>
-            <p className="mt-1 text-xs text-ink-400">Try lowering the minimum probability or selecting all price bands.</p>
+            <ShieldAlert className="h-10 w-10 text-ink-400" />
+            <h3 className="mt-3 text-sm font-semibold text-ink-900">No Stocks Meet the Filter Criteria</h3>
+            <p className="mt-1 text-xs text-ink-500">Try lowering the minimum probability or selecting all price bands.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-white/10 bg-white/5 font-semibold text-ink-300">
+              <thead className="border-b border-ink-200 bg-ink-50/80 font-semibold text-ink-600">
                 <tr>
                   <th className="p-3.5">Stock</th>
                   <th className="p-3.5">Band</th>
@@ -427,18 +421,18 @@ export function CircuitPage() {
                   <th className="p-3.5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-ink-200">
+              <tbody className="divide-y divide-ink-100 text-ink-800">
                 {filteredPredictions.map((stock) => (
-                  <tr key={stock.symbol} className="hover:bg-white/[0.03] transition">
+                  <tr key={stock.symbol} className="hover:bg-brand-50/40 transition">
                     <td className="p-3.5">
                       <div className="flex flex-col">
                         <Link
                           to={`/stocks/${stock.symbol}`}
-                          className="font-bold text-white hover:text-brand-400"
+                          className="font-bold text-ink-900 hover:text-brand-600"
                         >
                           {stock.symbol}
                         </Link>
-                        <span className="text-[11px] text-ink-400 line-clamp-1">{stock.name}</span>
+                        <span className="text-[11px] text-ink-500 line-clamp-1">{stock.name}</span>
                       </div>
                     </td>
 
@@ -446,10 +440,10 @@ export function CircuitPage() {
                       <span
                         className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold ${
                           stock.priceBandPct === 20
-                            ? 'bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20'
+                            ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
                             : stock.priceBandPct === 10
-                              ? 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20'
-                              : 'bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20'
+                              ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                              : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
                         }`}
                       >
                         {stock.priceBandPct}%
@@ -457,10 +451,10 @@ export function CircuitPage() {
                     </td>
 
                     <td className="p-3.5 font-mono">
-                      <div className="text-white font-semibold">₹{stock.close.toLocaleString()}</div>
+                      <div className="text-ink-900 font-semibold">₹{stock.close.toLocaleString()}</div>
                       <div
-                        className={`flex items-center text-[11px] ${
-                          stock.changePct >= 0 ? 'text-up-400' : 'text-down-400'
+                        className={`flex items-center text-[11px] font-medium ${
+                          stock.changePct >= 0 ? 'text-up-600' : 'text-down-600'
                         }`}
                       >
                         {stock.changePct >= 0 ? '+' : ''}
@@ -469,10 +463,10 @@ export function CircuitPage() {
                     </td>
 
                     <td className="p-3.5 font-mono">
-                      <div className="text-[11px] text-up-400">
+                      <div className="text-[11px] text-up-700">
                         UC: <span className="font-semibold">{stock.distanceToUc}% away</span>
                       </div>
-                      <div className="text-[11px] text-down-400">
+                      <div className="text-[11px] text-down-700">
                         LC: <span className="font-semibold">{stock.distanceToLc}% away</span>
                       </div>
                     </td>
@@ -480,17 +474,17 @@ export function CircuitPage() {
                     <td className="p-3.5">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between font-mono text-[11px]">
-                          <span className="font-semibold text-up-400">UC {stock.ucProbability}%</span>
-                          <span className="text-ink-400">{stock.noCircuitProbability}%</span>
-                          <span className="font-semibold text-down-400">LC {stock.lcProbability}%</span>
+                          <span className="font-semibold text-up-700">UC {stock.ucProbability}%</span>
+                          <span className="text-ink-500">{stock.noCircuitProbability}%</span>
+                          <span className="font-semibold text-down-700">LC {stock.lcProbability}%</span>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-ink-800 flex">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100 flex">
                           <div
                             className="bg-up-500"
                             style={{ width: `${stock.ucProbability}%` }}
                           />
                           <div
-                            className="bg-ink-600"
+                            className="bg-ink-200"
                             style={{ width: `${stock.noCircuitProbability}%` }}
                           />
                           <div
@@ -504,7 +498,7 @@ export function CircuitPage() {
                     <td className="p-3.5 font-mono">
                       <span
                         className={`font-semibold ${
-                          stock.rvol >= 2.5 ? 'text-amber-400' : stock.rvol >= 1.5 ? 'text-ink-200' : 'text-ink-400'
+                          stock.rvol >= 2.5 ? 'text-amber-700' : stock.rvol >= 1.5 ? 'text-ink-800' : 'text-ink-500'
                         }`}
                       >
                         {stock.rvol}x
@@ -516,7 +510,7 @@ export function CircuitPage() {
                         {stock.signals.slice(0, 2).map((sig) => (
                           <span
                             key={sig}
-                            className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-ink-300 ring-1 ring-white/10"
+                            className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] text-ink-700 ring-1 ring-ink-200"
                           >
                             {sig}
                           </span>
@@ -527,7 +521,7 @@ export function CircuitPage() {
                     <td className="p-3.5 text-right">
                       <Link
                         to={`/stocks/${stock.symbol}`}
-                        className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-ink-300 hover:bg-white/10 hover:text-white transition"
+                        className="inline-flex items-center rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-xs text-ink-700 shadow-xs hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition"
                       >
                         Analyze
                         <ChevronRight className="ml-1 h-3 w-3" />

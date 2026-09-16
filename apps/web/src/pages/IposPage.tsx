@@ -2,7 +2,6 @@ import type { IpoDto } from '@nse/shared'
 import clsx from 'clsx'
 import {
   AlertCircle,
-  ArrowRight,
   BarChart3,
   CalendarDays,
   ChevronDown,
@@ -189,7 +188,7 @@ function SubscriptionOverviewChart({ ipos }: { ipos: IpoDto[] }) {
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
             <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
             <Tooltip
-              formatter={(v: number, name: string) => [`${fmt(v, 2)}×`, name]}
+              formatter={(v: any, name: any) => [`${fmt(Number(v), 2)}×`, name]}
               contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#e2e8f0' }}
             />
             {hasBreakdown ? (
@@ -342,7 +341,7 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
                         <CartesianGrid vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#64748b' }} />
                         <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
-                        <Tooltip formatter={(v: number) => [`${fmt(v, 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <Tooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         <Line type="monotone" dataKey="overall" name="Overall" stroke="#7c3aed" strokeWidth={2} dot={{ fill: '#7c3aed', r: 4 }} />
                         {ipo.subscriptionTrend.some((d) => d.qib > 0) && (
                           <Line type="monotone" dataKey="qib" name="QIB" stroke="#0891b2" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
@@ -375,7 +374,7 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
                         <CartesianGrid vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="category" tick={{ fontSize: 10, fill: '#64748b' }} />
                         <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
-                        <Tooltip formatter={(v: number) => [`${fmt(v, 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <Tooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         <Bar dataKey="value" name="Subscription" radius={[4, 4, 0, 0]}>
                           <Cell fill="#6d28d9" />
                           <Cell fill="#0891b2" />

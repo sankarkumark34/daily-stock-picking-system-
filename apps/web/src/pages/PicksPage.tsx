@@ -102,7 +102,7 @@ export function PicksPage() {
             )}
           >
             <span>⚡ Sprint-15</span>
-            <span className="rounded bg-black/10 px-1 py-0.5 text-[10px]">10 Days · ≥15% ({sprintCount})</span>
+            <span className="rounded bg-white/20 px-1 py-0.5 text-[10px]">10 Days · ≥15% ({sprintCount})</span>
           </button>
           <button
             type="button"
@@ -113,7 +113,7 @@ export function PicksPage() {
             )}
           >
             <span>🎯 Marathon-30</span>
-            <span className="rounded bg-black/10 px-1 py-0.5 text-[10px]">30–60 Days · ≥30% ({marathonCount})</span>
+            <span className="rounded bg-white/20 px-1 py-0.5 text-[10px]">30–60 Days · ≥30% ({marathonCount})</span>
           </button>
         </div>
 
