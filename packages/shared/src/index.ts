@@ -638,9 +638,13 @@ export interface IpoDto {
   priceBand: string;
   issueSize: string;        // e.g. "₹500 Cr"
   lotSize: number;
-  /** Overall / total subscription */
+  /** Overall / total subscription times (e.g. 32.5x) */
+  overallSubscription: number;
+  /** QIB category subscription */
   qibSubscription: number;
+  /** NNI / HNI category subscription */
   nniSubscription: number;
+  /** Retail category subscription */
   retailSubscription: number;
   /** Day-wise subscription trend (Day 1, Day 2, Day 3) */
   subscriptionTrend: IpoSubscriptionDay[];

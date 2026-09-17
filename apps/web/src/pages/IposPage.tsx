@@ -2,11 +2,13 @@ import type { IpoDto } from '@nse/shared'
 import clsx from 'clsx'
 import {
   AlertCircle,
+  ArrowUpDown,
   BarChart3,
   CalendarDays,
   ChevronDown,
   Layers,
   Rocket,
+  SlidersHorizontal,
   Sparkles,
   TrendingUp,
   Users,
@@ -22,11 +24,33 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as ChartTooltip,
   XAxis,
   YAxis,
 } from 'recharts'
-import { Badge, Card, Skeleton, fadeUp, staggerList } from '../components/ui'
+import {
+  Badge,
+  Card,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Skeleton,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Tooltip as UiTooltip,
+  fadeUp,
+  staggerList,
+} from '../components/ui'
 import { useUpcomingIpos } from '../lib/api'
 import { fmt } from '../lib/format'
 
@@ -43,6 +67,7 @@ function fmtDate(s: string) {
 }
 
 function subTone(x: number) {
+  if (x >= 30) return 'text-purple-700 font-extrabold'
   if (x >= 10) return 'text-up-700'
   if (x >= 2) return 'text-brand-700'
   if (x >= 1) return 'text-warn-700'
@@ -50,6 +75,7 @@ function subTone(x: number) {
 }
 
 function subLabel(x: number) {
+  if (x >= 30) return '💎 Elite (≥30×)'
   if (x >= 10) return '🔥 Mega'
   if (x >= 3) return '💪 Strong'
   if (x >= 2) return '✅ Good'
@@ -57,17 +83,49 @@ function subLabel(x: number) {
   return x > 0 ? '🔄 Low' : '—'
 }
 
+type FilterTab = 'ALL' | 'OPEN' | 'ELITE' | 'UPCOMING'
+type SortOption = 'sub' | 'closing' | 'name'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  sub: 'Highest Demand',
+  closing: 'Closing Soonest',
+  name: 'Name (A–Z)',
+}
+
 /* ═══════════════════════════════════════════════════════════════════════ */
 /*  Page                                                                   */
 /* ═══════════════════════════════════════════════════════════════════════ */
 export function IposPage() {
   const { data: ipos, isLoading, error } = useUpcomingIpos()
-  const [showOnlyElite, setShowOnlyElite] = useState(false)
+  const [filterTab, setFilterTab] = useState<FilterTab>('ALL')
+  const [sortBy, setSortBy] = useState<SortOption>('sub')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [isGuideOpen, setIsGuideOpen] = useState(false)
 
-  const displayed = ipos?.filter((ipo) => (showOnlyElite ? ipo.isElite : true)) ?? []
   const openIpos = ipos?.filter((i) => i.status === 'OPEN') ?? []
   const upcomingIpos = ipos?.filter((i) => i.status === 'UPCOMING') ?? []
+  const eliteIpos = ipos?.filter((i) => i.isElite) ?? []
+
+  let displayed = (ipos ?? []).filter((ipo) => {
+    if (filterTab === 'OPEN') return ipo.status === 'OPEN'
+    if (filterTab === 'UPCOMING') return ipo.status === 'UPCOMING'
+    if (filterTab === 'ELITE') return ipo.isElite
+    return true
+  })
+
+  displayed = [...displayed].sort((a, b) => {
+    if (sortBy === 'sub') {
+      const subA = (a.overallSubscription && a.overallSubscription > 0) ? a.overallSubscription : a.qibSubscription
+      const subB = (b.overallSubscription && b.overallSubscription > 0) ? b.overallSubscription : b.qibSubscription
+      return subB - subA
+    }
+    if (sortBy === 'closing') {
+      const closeA = a.daysToClose ?? 999
+      const closeB = b.daysToClose ?? 999
+      return closeA - closeB
+    }
+    return a.symbol.localeCompare(b.symbol)
+  })
 
   if (isLoading) {
     return (
@@ -100,31 +158,129 @@ export function IposPage() {
             Upcoming IPOs
           </h1>
           <p className="mt-1 text-sm text-ink-500">
-            Live NSE data · subscription trends · QIB / NNI / Retail breakdown · Elite grade analysis
+            Live NSE data · subscription trends · QIB / NNI / Retail breakdown · Elite grade analysis (≥30×)
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2">
-            <span className="rounded-full border border-up-100 bg-up-50 px-3 py-1 text-xs font-semibold text-up-700">
-              🟢 {openIpos.length} Open
-            </span>
-            <span className="rounded-full border border-ink-200 bg-ink-50 px-3 py-1 text-xs font-semibold text-ink-600">
-              🕐 {upcomingIpos.length} Upcoming
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowOnlyElite(!showOnlyElite)}
-            className={clsx(
-              'rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors',
-              showOnlyElite
-                ? 'border-brand-400 bg-brand-600 text-white'
-                : 'border-ink-200 bg-white/60 text-ink-700 hover:bg-ink-100',
-            )}
-          >
-            💎 Elite Only
-          </button>
-        </div>
+
+        {/* Sleek Guide Dialog */}
+        <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+          <DialogTrigger className="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50/70 px-3.5 py-1.5 text-xs font-semibold text-brand-700 shadow-xs backdrop-blur-sm transition-all hover:bg-brand-100 hover:border-brand-300">
+            <Sparkles size={13} className="text-brand-600" />
+            Elite Grade Guide
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles size={16} className="text-brand-600" />
+                IPO Elite Grade Classification
+              </DialogTitle>
+              <DialogDescription>
+                Quantitative criteria used to identify high-probability listing opportunities
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 my-2 text-xs">
+              <div className="rounded-xl border border-purple-200 bg-purple-50/70 p-3.5">
+                <p className="font-bold text-purple-900 flex items-center gap-1.5">
+                  <span>💎</span> Requirement: Overall Subscription ≥ 30×
+                </p>
+                <p className="mt-1 text-purple-800 leading-relaxed">
+                  Only IPOs with $\ge$ 30× total demand (or institutional QIB $\ge$ 30×) qualify for the Elite Grade badge. Historical NSE data indicates that 30×+ oversubscription heavily correlates with premium listing gains.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-ink-200/80 bg-ink-50/70 p-3.5 space-y-2">
+                <p className="font-semibold text-ink-900">Demand Tiers:</p>
+                <ul className="space-y-1.5 text-ink-600">
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-purple-700 shrink-0">≥ 30×:</span>
+                    <span><strong>Elite Grade:</strong> Massive multi-category conviction. High listing gain potential.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-up-700 shrink-0">10× – 29×:</span>
+                    <span><strong>Mega Demand:</strong> Healthy institutional and retail interest.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-warn-700 shrink-0">&lt; 3×:</span>
+                    <span><strong>Caution:</strong> Subdued interest; listing gain risk elevated.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <button
+                type="button"
+                className="w-full sm:w-auto rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
+                onClick={() => setIsGuideOpen(false)}
+              >
+                Got it
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+
+      {/* ── Sleek Filter Bar: Segmented Tabs & Sort Dropdown ── */}
+      <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs value={filterTab} onValueChange={(v) => setFilterTab(v as FilterTab)}>
+          <TabsList>
+            <TabsTrigger value="ALL">
+              All IPOs
+              <span className="ml-1 rounded-md bg-ink-200/60 px-1.5 py-0.5 text-[10px] font-bold text-ink-700">
+                {ipos?.length ?? 0}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="OPEN">
+              🟢 Open
+              <span className="ml-1 rounded-md bg-up-100 px-1.5 py-0.5 text-[10px] font-bold text-up-800">
+                {openIpos.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="ELITE">
+              💎 Elite (≥30×)
+              <span className="ml-1 rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
+                {eliteIpos.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="UPCOMING">
+              🕐 Upcoming
+              <span className="ml-1 rounded-md bg-ink-200/60 px-1.5 py-0.5 text-[10px] font-bold text-ink-700">
+                {upcomingIpos.length}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Sleek Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <SlidersHorizontal size={13} className="text-brand-600" />
+            Sort: <span className="font-semibold text-ink-900">{SORT_LABELS[sortBy]}</span>
+            <ChevronDown size={12} className="text-ink-400" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              icon={<TrendingUp size={13} className="text-brand-600" />}
+              onClick={() => setSortBy('sub')}
+            >
+              Highest Demand
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              icon={<CalendarDays size={13} className="text-warn-600" />}
+              onClick={() => setSortBy('closing')}
+            >
+              Closing Soonest
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              icon={<ArrowUpDown size={13} className="text-ink-500" />}
+              onClick={() => setSortBy('name')}
+            >
+              Name (A–Z)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
 
       {/* ── Market Overview Chart: All IPOs subscription comparison ── */}
@@ -138,7 +294,13 @@ export function IposPage() {
       {displayed.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-40 gap-2 text-ink-500">
           <Layers size={28} className="text-ink-300" />
-          <p>{showOnlyElite ? 'No Elite Grade IPOs found at this time.' : 'No upcoming IPOs found at this time.'}</p>
+          <p>
+            {filterTab === 'ELITE'
+              ? 'No Elite Grade IPOs (≥30× subscription) found at this time.'
+              : filterTab === 'OPEN'
+              ? 'No open IPOs at this time.'
+              : 'No upcoming IPOs found at this time.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -161,17 +323,20 @@ export function IposPage() {
 /* Subscription overview bar chart — all IPOs side by side                */
 /* ─────────────────────────────────────────────────────────────────────── */
 function SubscriptionOverviewChart({ ipos }: { ipos: IpoDto[] }) {
-  const withSub = ipos.filter((i) => i.qibSubscription > 0 || i.nniSubscription > 0 || i.retailSubscription > 0)
+  const withSub = ipos.filter((i) => (i.overallSubscription ?? i.qibSubscription) > 0 || i.nniSubscription > 0 || i.retailSubscription > 0)
   if (!withSub.length) return null
 
-  const data = withSub.map((ipo) => ({
-    name: ipo.symbol.length > 10 ? ipo.symbol.slice(0, 10) + '…' : ipo.symbol,
-    overall: ipo.qibSubscription > 0 ? ipo.qibSubscription : 0,
-    QIB: ipo.qibSubscription > 0 && ipo.nniSubscription > 0 ? ipo.qibSubscription : 0,
-    NNI: ipo.nniSubscription,
-    Retail: ipo.retailSubscription,
-    isElite: ipo.isElite,
-  }))
+  const data = withSub.map((ipo) => {
+    const overall = (ipo.overallSubscription && ipo.overallSubscription > 0) ? ipo.overallSubscription : ipo.qibSubscription
+    return {
+      name: ipo.symbol.length > 10 ? ipo.symbol.slice(0, 10) + '…' : ipo.symbol,
+      overall: overall > 0 ? overall : 0,
+      QIB: ipo.qibSubscription > 0 && ipo.nniSubscription > 0 ? ipo.qibSubscription : 0,
+      NNI: ipo.nniSubscription,
+      Retail: ipo.retailSubscription,
+      isElite: ipo.isElite,
+    }
+  })
 
   // Check if we have category breakdown or only overall
   const hasBreakdown = data.some((d) => d.NNI > 0 || d.Retail > 0)
@@ -187,7 +352,7 @@ function SubscriptionOverviewChart({ ipos }: { ipos: IpoDto[] }) {
             <CartesianGrid vertical={false} stroke="#e2e8f0" />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
             <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
-            <Tooltip
+            <ChartTooltip
               formatter={(v: any, name: any) => [`${fmt(Number(v), 2)}×`, name]}
               contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#e2e8f0' }}
             />
@@ -209,7 +374,7 @@ function SubscriptionOverviewChart({ ipos }: { ipos: IpoDto[] }) {
         </ResponsiveContainer>
       </div>
       <p className="mt-2 text-[11px] text-ink-400">
-        Purple = Elite Grade · Grey = Standard · Values = subscription multiples (×)
+        Purple = Elite Grade (≥30×) · Grey = Standard · Values = subscription multiples (×)
       </p>
     </Card>
   )
@@ -219,7 +384,7 @@ function SubscriptionOverviewChart({ ipos }: { ipos: IpoDto[] }) {
 /* Individual IPO Card                                                     */
 /* ─────────────────────────────────────────────────────────────────────── */
 function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; onToggle: () => void }) {
-  const overallSub = ipo.qibSubscription
+  const overallSub = (ipo.overallSubscription && ipo.overallSubscription > 0) ? ipo.overallSubscription : ipo.qibSubscription
   const hasBreakdown = ipo.nniSubscription > 0 || ipo.retailSubscription > 0
   const hasTrend = ipo.subscriptionTrend && ipo.subscriptionTrend.length > 1
 
@@ -232,9 +397,11 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
     >
       {/* Elite gradient strip */}
       {ipo.isElite && (
-        <div className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white">
-          <Sparkles size={11} className="animate-pulse" /> ELITE GRADE <Sparkles size={11} className="animate-pulse" />
-        </div>
+        <UiTooltip content="Elite Grade: Subscription ≥ 30× with massive institutional conviction" className="w-full block">
+          <div className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white cursor-help">
+            <Sparkles size={11} className="animate-pulse" /> ELITE GRADE (≥30×) <Sparkles size={11} className="animate-pulse" />
+          </div>
+        </UiTooltip>
       )}
 
       {/* Header */}
@@ -341,7 +508,7 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
                         <CartesianGrid vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#64748b' }} />
                         <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
-                        <Tooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <ChartTooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         <Line type="monotone" dataKey="overall" name="Overall" stroke="#7c3aed" strokeWidth={2} dot={{ fill: '#7c3aed', r: 4 }} />
                         {ipo.subscriptionTrend.some((d) => d.qib > 0) && (
                           <Line type="monotone" dataKey="qib" name="QIB" stroke="#0891b2" strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
@@ -374,7 +541,7 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
                         <CartesianGrid vertical={false} stroke="#e2e8f0" />
                         <XAxis dataKey="category" tick={{ fontSize: 10, fill: '#64748b' }} />
                         <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => `${v}×`} />
-                        <Tooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <ChartTooltip formatter={(v: any) => [`${fmt(Number(v), 2)}×`]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
                         <Bar dataKey="value" name="Subscription" radius={[4, 4, 0, 0]}>
                           <Cell fill="#6d28d9" />
                           <Cell fill="#0891b2" />
@@ -422,14 +589,15 @@ function SubBar({ label, value, max, color }: { label: string; value: number; ma
 
 /* ── Analysis summary ── */
 function AnalysisSummary({ ipo }: { ipo: IpoDto }) {
-  const overallSub = ipo.qibSubscription
+  const overallSub = (ipo.overallSubscription && ipo.overallSubscription > 0) ? ipo.overallSubscription : ipo.qibSubscription
   const qib = ipo.qibSubscription
   const nni = ipo.nniSubscription
   const retail = ipo.retailSubscription
 
   const signals: { icon: string; text: string; tone: 'up' | 'warn' | 'down' | 'neutral' }[] = []
 
-  if (overallSub >= 10) signals.push({ icon: '🔥', text: `Mega oversubscription at ${fmt(overallSub, 1)}× — very strong listing likely`, tone: 'up' })
+  if (overallSub >= 30) signals.push({ icon: '💎', text: `Elite oversubscription at ${fmt(overallSub, 1)}× (≥30×) — blockbuster listing expected`, tone: 'up' })
+  else if (overallSub >= 10) signals.push({ icon: '🔥', text: `Mega oversubscription at ${fmt(overallSub, 1)}× — very strong listing likely`, tone: 'up' })
   else if (overallSub >= 3) signals.push({ icon: '💪', text: `Strong subscription ${fmt(overallSub, 1)}× — good listing expected`, tone: 'up' })
   else if (overallSub >= 1.5) signals.push({ icon: '📊', text: `Decent subscription ${fmt(overallSub, 1)}× — moderate interest`, tone: 'warn' })
   else if (overallSub > 0) signals.push({ icon: '⚠️', text: `Weak subscription ${fmt(overallSub, 1)}× — listing risk elevated`, tone: 'down' })

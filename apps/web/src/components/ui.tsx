@@ -344,3 +344,11 @@ export function Spinner({ size = 'md', className }: { size?: 'sm' | 'md' | 'lg';
   )
 }
 
+/* ---------- sleek primitives (Tabs, DropdownMenu, Popover, Dialog, Tooltip) ---------- */
+export * from './ui/tabs'
+export * from './ui/dropdown'
+export * from './ui/popover'
+export * from './ui/dialog'
+export * from './ui/tooltip'
+
+

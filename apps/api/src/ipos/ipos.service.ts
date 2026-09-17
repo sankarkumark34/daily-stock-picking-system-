@@ -115,26 +115,25 @@ export class IposService {
           }
         }
 
-        // ── Elite classification ──────────────────────────────────────────
+        // ── Elite classification (Subscription ≥ 30x threshold) ──────────
         const eliteReasons: string[] = [];
         let isElite = false;
 
-        if (overallSub >= 10) {
+        if (overallSub >= 30) {
           isElite = true;
-          eliteReasons.push(`Mega demand: ${overallSub.toFixed(2)}× overall subscription`);
-        } else if (overallSub >= 3) {
+          eliteReasons.push(`Blockbuster demand: ${overallSub.toFixed(2)}× overall subscription (≥ 30× Elite Grade threshold)`);
+        } else if (qibSub >= 30) {
           isElite = true;
-          eliteReasons.push(`Strong demand: ${overallSub.toFixed(2)}× overall subscription`);
-        } else if (overallSub >= 2) {
-          isElite = true;
-          eliteReasons.push(`Good demand: ${overallSub.toFixed(2)}× overall subscription`);
+          eliteReasons.push(`Massive institutional demand: ${qibSub.toFixed(2)}× QIB subscription (≥ 30× Elite Grade threshold)`);
         }
-        if (qibSub >= 5) {
-          if (!isElite) isElite = true;
-          eliteReasons.push(`QIB heavily subscribed: ${qibSub.toFixed(2)}× — institutional confidence`);
-        }
-        if (nniSub >= 5) {
-          eliteReasons.push(`HNI/NNI: ${nniSub.toFixed(2)}× — high net-worth interest`);
+
+        if (isElite) {
+          if (qibSub >= 10 && overallSub >= 30) {
+            eliteReasons.push(`Strong institutional backing: ${qibSub.toFixed(2)}× QIB`);
+          }
+          if (nniSub >= 10) {
+            eliteReasons.push(`High HNI/NNI participation: ${nniSub.toFixed(2)}×`);
+          }
         }
 
         ipos.push({
@@ -145,6 +144,7 @@ export class IposService {
           priceBand: item.issuePrice ?? item.priceBand ?? '—',
           issueSize: item.issueSize ?? item.totalIssueSize ?? '—',
           lotSize: parseInt(item.lotSize ?? '0', 10) || 0,
+          overallSubscription: overallSub,
           qibSubscription: qibSub,
           nniSubscription: nniSub,
           retailSubscription: retailSub,
