@@ -83,11 +83,13 @@ function subLabel(x: number) {
   return x > 0 ? '🔄 Low' : '—'
 }
 
-type FilterTab = 'ALL' | 'OPEN' | 'ELITE' | 'UPCOMING'
-type SortOption = 'sub' | 'closing' | 'name'
+type FilterTab = 'ALL' | 'OPEN' | 'CLOSED' | 'ELITE' | 'UPCOMING'
+type SortOption = 'sub' | 'gain' | 'listing' | 'closing' | 'name'
 
 const SORT_LABELS: Record<SortOption, string> = {
   sub: 'Highest Demand',
+  gain: 'Highest Expected Gain',
+  listing: 'Listing Soonest',
   closing: 'Closing Soonest',
   name: 'Name (A–Z)',
 }
@@ -103,11 +105,13 @@ export function IposPage() {
   const [isGuideOpen, setIsGuideOpen] = useState(false)
 
   const openIpos = ipos?.filter((i) => i.status === 'OPEN') ?? []
+  const closedIpos = ipos?.filter((i) => i.status === 'CLOSED') ?? []
   const upcomingIpos = ipos?.filter((i) => i.status === 'UPCOMING') ?? []
   const eliteIpos = ipos?.filter((i) => i.isElite) ?? []
 
   let displayed = (ipos ?? []).filter((ipo) => {
     if (filterTab === 'OPEN') return ipo.status === 'OPEN'
+    if (filterTab === 'CLOSED') return ipo.status === 'CLOSED'
     if (filterTab === 'UPCOMING') return ipo.status === 'UPCOMING'
     if (filterTab === 'ELITE') return ipo.isElite
     return true
@@ -118,6 +122,16 @@ export function IposPage() {
       const subA = (a.overallSubscription && a.overallSubscription > 0) ? a.overallSubscription : a.qibSubscription
       const subB = (b.overallSubscription && b.overallSubscription > 0) ? b.overallSubscription : b.qibSubscription
       return subB - subA
+    }
+    if (sortBy === 'gain') {
+      const gainA = a.expectedListingGainPercent ?? a.gmpPercent ?? 0
+      const gainB = b.expectedListingGainPercent ?? b.gmpPercent ?? 0
+      return gainB - gainA
+    }
+    if (sortBy === 'listing') {
+      const listA = a.daysToListing ?? 999
+      const listB = b.daysToListing ?? 999
+      return listA - listB
     }
     if (sortBy === 'closing') {
       const closeA = a.daysToClose ?? 999
@@ -237,6 +251,12 @@ export function IposPage() {
                 {openIpos.length}
               </span>
             </TabsTrigger>
+            <TabsTrigger value="CLOSED">
+              🏁 Awaiting Listing
+              <span className="ml-1 rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
+                {closedIpos.length}
+              </span>
+            </TabsTrigger>
             <TabsTrigger value="ELITE">
               💎 Elite (≥30×)
               <span className="ml-1 rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
@@ -265,6 +285,18 @@ export function IposPage() {
               onClick={() => setSortBy('sub')}
             >
               Highest Demand
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              icon={<Sparkles size={13} className="text-purple-600" />}
+              onClick={() => setSortBy('gain')}
+            >
+              Highest Expected Gain
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              icon={<CalendarDays size={13} className="text-purple-600" />}
+              onClick={() => setSortBy('listing')}
+            >
+              Listing Soonest
             </DropdownMenuItem>
             <DropdownMenuItem
               icon={<CalendarDays size={13} className="text-warn-600" />}
@@ -299,6 +331,8 @@ export function IposPage() {
               ? 'No Elite Grade IPOs (≥30× subscription) found at this time.'
               : filterTab === 'OPEN'
               ? 'No open IPOs at this time.'
+              : filterTab === 'CLOSED'
+              ? 'No closed IPOs awaiting listing at this time.'
               : 'No upcoming IPOs found at this time.'}
           </p>
         </div>
@@ -409,12 +443,24 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge tone={ipo.status === 'OPEN' ? 'success' : 'neutral'} size="sm">
-                {ipo.status === 'OPEN' ? '🟢 Open' : '🕐 Upcoming'}
+              <Badge
+                tone={ipo.status === 'OPEN' ? 'success' : ipo.status === 'CLOSED' ? 'info' : 'neutral'}
+                size="sm"
+              >
+                {ipo.status === 'OPEN'
+                  ? '🟢 Open'
+                  : ipo.status === 'CLOSED'
+                  ? '🏁 Closed · Listing'
+                  : '🕐 Upcoming'}
               </Badge>
               {ipo.daysToClose !== null && ipo.status === 'OPEN' && (
                 <span className="text-[11px] font-semibold text-warn-700">
                   {ipo.daysToClose === 0 ? 'Closes today!' : `${ipo.daysToClose}d left`}
+                </span>
+              )}
+              {ipo.daysToListing !== null && ipo.daysToListing !== undefined && ipo.status === 'CLOSED' && (
+                <span className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  🗓️ {ipo.daysToListing === 0 ? 'Listing Today!' : `Listing in ${ipo.daysToListing}d`}
                 </span>
               )}
             </div>
@@ -429,10 +475,46 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
           )}
         </div>
 
+        {/* Closed IPO Listing Prediction Radar */}
+        {ipo.status === 'CLOSED' && (
+          <div className="mt-3 rounded-xl border border-purple-200/90 bg-gradient-to-br from-purple-50/70 via-white to-mint-50/40 p-3 shadow-xs">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-ink-600 flex items-center gap-1.5">
+                <CalendarDays size={13} className="text-purple-600" />
+                Expected Listing Date:
+              </span>
+              <span className="font-bold text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md">
+                {ipo.listingDate ? fmtDate(ipo.listingDate) : 'T+3 (Upcoming)'}
+              </span>
+            </div>
+
+            <div className="mt-2.5 pt-2 border-t border-purple-100/70 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-ink-400">Issue / Cutoff</span>
+                <p className="text-xs font-bold text-ink-800">₹{ipo.cutoffPrice || '—'}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-purple-700">Expected Listing</span>
+                <p className="text-sm font-extrabold text-up-700">
+                  {ipo.expectedListingPrice ? `₹${ipo.expectedListingPrice}` : '—'}
+                  {ipo.expectedListingGainPercent !== undefined && ipo.expectedListingGainPercent > 0 && (
+                    <span className="ml-1 text-xs font-bold text-up-600">
+                      (+{ipo.expectedListingGainPercent}%)
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Key info grid */}
         <div className="mt-3 grid grid-cols-2 gap-y-2 text-xs">
           <InfoCell icon={<CalendarDays size={12} />} label="Open" value={fmtDate(ipo.openDate)} />
           <InfoCell icon={<CalendarDays size={12} />} label="Close" value={fmtDate(ipo.closeDate)} />
+          {ipo.listingDate && (
+            <InfoCell icon={<CalendarDays size={12} />} label="Listing Debut" value={fmtDate(ipo.listingDate)} />
+          )}
           <InfoCell icon={<TrendingUp size={12} />} label="Price Band" value={ipo.priceBand || '—'} />
           <InfoCell icon={<Layers size={12} />} label="Issue Size" value={ipo.issueSize || '—'} />
           {ipo.lotSize > 0 && (
@@ -607,8 +689,29 @@ function AnalysisSummary({ ipo }: { ipo: IpoDto }) {
 
   if (retail >= 2) signals.push({ icon: '👥', text: `Retail ${fmt(retail, 1)}× — strong retail participation`, tone: 'up' })
 
-  if (ipo.daysToClose === 0) signals.push({ icon: '⏰', text: 'Last day to apply — closes today!', tone: 'warn' })
-  else if (ipo.daysToClose === 1) signals.push({ icon: '⏰', text: 'Closes tomorrow — time running out', tone: 'warn' })
+  if (ipo.status === 'CLOSED' && ipo.expectedListingPrice) {
+    signals.push({
+      icon: '🎯',
+      text: `Closed with massive demand (${fmt(overallSub, 1)}×). Expected listing debut at ₹${ipo.expectedListingPrice} (+${ipo.expectedListingGainPercent}% over cutoff ₹${ipo.cutoffPrice || '—'}).`,
+      tone: 'up',
+    })
+  }
+
+  if (ipo.status === 'CLOSED' && ipo.daysToListing !== null && ipo.daysToListing !== undefined) {
+    signals.push({
+      icon: '📅',
+      text:
+        ipo.daysToListing === 0
+          ? 'Lists on NSE/BSE TODAY! Watch pre-open order discovery at 9:00 AM.'
+          : `Listing scheduled in ${ipo.daysToListing} business days (${fmtDate(ipo.listingDate || '')}) under SEBI T+3 rule.`,
+      tone: 'neutral',
+    })
+  }
+
+  if (ipo.status === 'OPEN') {
+    if (ipo.daysToClose === 0) signals.push({ icon: '⏰', text: 'Last day to apply — closes today!', tone: 'warn' })
+    else if (ipo.daysToClose === 1) signals.push({ icon: '⏰', text: 'Closes tomorrow — time running out', tone: 'warn' })
+  }
 
   if (!signals.length) {
     signals.push({ icon: '📋', text: 'Subscription data not yet available for this IPO', tone: 'neutral' })

@@ -69,14 +69,6 @@ export function Badge({ tone = 'neutral', children, size = 'sm', className }: { 
   )
 }
 
-const toneText: Record<Tone, string> = {
-  neutral: 'text-ink-900',
-  success: 'text-up-700',
-  danger: 'text-down-700',
-  warning: 'text-warn-700',
-  info: 'text-brand-700',
-  violet: 'text-violet-600',
-}
 
 /* ---------- glossary tooltip ---------- */
 /**
@@ -158,18 +150,60 @@ export function Term({ k, children, className }: { k: string; children: ReactNod
   )
 }
 
-export function StatTile({ label, value, sub, tone = 'neutral', icon, className, tip }: { label: string; value: ReactNode; sub?: ReactNode; tone?: Tone; icon?: ReactNode; className?: string; tip?: string }) {
+export function StatTile({
+  label,
+  value,
+  sub,
+  tone = 'neutral',
+  icon,
+  className,
+  tip,
+}: {
+  label: string
+  value: ReactNode
+  sub?: ReactNode
+  tone?: Tone
+  icon?: ReactNode
+  className?: string
+  tip?: string
+}) {
+  const variantStyles = {
+    neutral: 'bg-white border-[#DFE6F1]',
+    success: 'bg-[#E8FAF4] border-[#C7F4E5]',
+    danger: 'bg-[#FFF0F3] border-[#FFDDE4]',
+    warning: 'bg-[#FFF8E7] border-[#FFEEC4]',
+    info: 'bg-[#F0EBFF] border-[#E2D4FF]',
+    violet: 'bg-[#F0EBFF] border-[#E2D4FF]',
+  }
+  const valueColor = {
+    neutral: 'text-ink-950',
+    success: 'text-[#079B73]',
+    danger: 'text-[#D9234F]',
+    warning: 'text-[#D88A00]',
+    info: 'text-[#7046E8]',
+    violet: 'text-[#7046E8]',
+  }
+
   return (
-    <motion.div variants={fadeUp} className={clsx('rounded-xl border border-ink-200 bg-white p-4 shadow-card', className)}>
+    <motion.div
+      variants={fadeUp}
+      className={clsx(
+        'rounded-xl border p-4 shadow-card metric-card-hover cursor-default',
+        variantStyles[tone] ?? variantStyles.neutral,
+        className,
+      )}
+    >
       <div className="flex items-center justify-between">
-        <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+        <p className="eyebrow-label inline-flex items-center gap-1 text-ink-500">
           {label}
           {tip && <InfoTip term={tip} />}
         </p>
         {icon && <span className="text-ink-400">{icon}</span>}
       </div>
-      <p className={clsx('mt-1.5 text-2xl font-semibold tnum', toneText[tone])}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-ink-500">{sub}</p>}
+      <p className={clsx('mt-2 metric-value', valueColor[tone] ?? valueColor.neutral)}>
+        {value}
+      </p>
+      {sub && <p className="mt-1.5 helper-text">{sub}</p>}
     </motion.div>
   )
 }
@@ -250,14 +284,74 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   )
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({
+  eyebrow = 'QUANTITATIVE SELECTION SYSTEM',
+  title,
+  description,
+  actions,
+  className,
+}: {
+  eyebrow?: string
+  title: string
+  description?: ReactNode
+  actions?: ReactNode
+  className?: string
+}) {
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className={clsx('mb-6 flex flex-wrap items-end justify-between gap-4', className)}
+    >
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-ink-900">{title}</h1>
-        {description && <p className="mt-1 text-sm text-ink-500">{description}</p>}
+        {eyebrow && (
+          <p className="eyebrow-label mb-1 text-[#7046E8]">
+            {eyebrow}
+          </p>
+        )}
+        <h1 className="page-title">{title}</h1>
+        {description && <p className="mt-1 helper-text">{description}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
+    </motion.div>
+  )
+}
+
+/** Insight Banner (Design Spec §6.8) */
+export function InsightBanner({
+  icon,
+  title,
+  message,
+  action,
+  className,
+}: {
+  icon?: ReactNode
+  title: string
+  message: ReactNode
+  action?: ReactNode
+  className?: string
+}) {
+  return (
+    <motion.div
+      variants={fadeUp}
+      className={clsx(
+        'relative overflow-hidden rounded-xl border border-[#CFBAFF] bg-gradient-to-r from-[#F0EBFF] via-white to-[#E8FAF4]/50 p-4 shadow-xs',
+        className,
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#7046E8] text-white shadow-xs">
+            {icon}
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-ink-950">{title}</h3>
+            <p className="mt-0.5 text-xs text-ink-600 leading-relaxed">{message}</p>
+          </div>
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
     </motion.div>
   )
 }

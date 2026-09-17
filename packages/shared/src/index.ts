@@ -658,5 +658,15 @@ export interface IpoDto {
   sector: string;
   isElite: boolean;
   eliteReasons: string[];
+  /** Cutoff issue price in INR (e.g. 93) */
+  cutoffPrice?: number;
+  /** Estimated or confirmed NSE listing date (e.g. "23-Sep-2026") */
+  listingDate?: string;
+  /** Days remaining until listing (0 = today, null = unknown) */
+  daysToListing?: number | null;
+  /** Expected listing price modeled from subscription demand */
+  expectedListingPrice?: number;
+  /** Expected listing gain percentage (e.g. +28.5%) */
+  expectedListingGainPercent?: number;
 }
 

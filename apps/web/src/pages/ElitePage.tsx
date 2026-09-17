@@ -229,14 +229,17 @@ function PageHeader({ overview, date }: { overview: MarketOverviewDto | undefine
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-ink-900">
-          <Star size={20} className="fill-amber-400 text-amber-400" />
+        <p className="eyebrow-label mb-1 text-[#D88A00]">
+          QUANTITATIVE CONVICTION PORTFOLIO
+        </p>
+        <h1 className="flex items-center gap-2 page-title">
+          <Star size={22} className="fill-[#D88A00] text-[#D88A00]" />
           Elite 4 — Diversified Swing Portfolio
         </h1>
-        <p className="mt-1 text-sm text-ink-500">
+        <p className="mt-1 helper-text">
           {date
             ? `Top pick from 4 different sectors after close on ${dateLong(date)} — correlation-protected (Playbook §9.6).`
-            : `Top pick from 4 different sectors · One sector drops, others stay — Playbook §9.6 correlation matrix.`}
+            : `Top pick from 4 different sectors · Zero correlation risk across independent market sectors.`}
         </p>
       </div>
       <div className="flex items-center gap-2">

@@ -70,14 +70,17 @@ export function CircuitPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/80 bg-white/70 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-2xl border border-[#DFE6F1] bg-white/70 p-6 shadow-xs backdrop-blur-xl">
         <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-1.5">
+            <p className="eyebrow-label text-[#7046E8]">
+              MACHINE LEARNING PROBABILISTIC INTELLIGENCE
+            </p>
             <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F0EBFF] text-[#7046E8] ring-1 ring-[#CFBAFF]">
                 <Zap className="h-5 w-5" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-ink-900">Circuit Radar (ML Predictor)</h1>
+              <h1 className="page-title">Circuit Radar (ML Predictor)</h1>
               <Badge tone="info" size="sm" className="font-mono text-xs">
                 LightGBM 3-Class
               </Badge>
@@ -85,9 +88,9 @@ export function CircuitPage() {
                 Time-Based Walk-Forward
               </Badge>
             </div>
-            <p className="max-w-2xl text-sm text-ink-600">
-              Calibrated probabilistic modeling of daily <strong className="text-up-700">Upper Circuit (UC)</strong> and{' '}
-              <strong className="text-down-700">Lower Circuit (LC)</strong> touches using intraday momentum, RVOL, price
+            <p className="max-w-2xl helper-text text-sm">
+              Calibrated probabilistic modeling of daily <strong className="text-[#079B73]">Upper Circuit (UC)</strong> and{' '}
+              <strong className="text-[#D9234F]">Lower Circuit (LC)</strong> touches using intraday momentum, RVOL, price
               bands, and market regime context.
             </p>
           </div>

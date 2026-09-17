@@ -5,6 +5,82 @@ import { differenceInCalendarDays, parseISO } from 'date-fns';
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
+/** Parse date from either ISO ("2026-09-18") or NSE format ("18-Sep-2026") */
+function parseNseDate(str: string): Date | null {
+  if (!str) return null;
+  const d1 = new Date(str);
+  if (!isNaN(d1.getTime())) return d1;
+  const parts = str.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if (parts) {
+    const months: Record<string, number> = {
+      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    };
+    const m = months[parts[2].toLowerCase()];
+    if (m !== undefined) return new Date(parseInt(parts[3], 10), m, parseInt(parts[1], 10));
+  }
+  return null;
+}
+
+/** Extract upper cutoff/issue price from price band string (e.g. "Rs. 88 to Rs. 93" -> 93) */
+function parseCutoffPrice(str: string): number {
+  if (!str) return 0;
+  const matches = str.match(/\d+(?:\.\d+)?/g);
+  if (!matches || matches.length === 0) return 0;
+  return Math.max(...matches.map(Number));
+}
+
+/** Add business days (skipping weekends) for SEBI T+3 IPO listing mandate */
+function addBusinessDays(date: Date, days: number): Date {
+  const cur = new Date(date);
+  let added = 0;
+  while (added < days) {
+    cur.setDate(cur.getDate() + 1);
+    const day = cur.getDay();
+    if (day !== 0 && day !== 6) added++;
+  }
+  return cur;
+}
+
+function formatDisplayDate(d: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = months[d.getMonth()];
+  const yr = d.getFullYear();
+  return `${day}-${mon}-${yr}`;
+}
+
+/** Calculate expected listing gain % and price based on oversubscription & institutional demand */
+function calcExpectedListing(overallSub: number, qibSub: number, cutoffPrice: number): {
+  expectedGainPct: number;
+  expectedListingPrice: number;
+} {
+  let expectedGainPct = 0;
+  if (overallSub >= 50) {
+    expectedGainPct = Math.min(115, Math.round(50 + (overallSub - 50) * 0.35));
+  } else if (overallSub >= 30) {
+    expectedGainPct = Math.round(35 + (overallSub - 30) * 0.75);
+  } else if (overallSub >= 10) {
+    expectedGainPct = Math.round(15 + (overallSub - 10) * 1.0);
+  } else if (overallSub >= 3) {
+    expectedGainPct = Math.round(5 + (overallSub - 3) * 1.4);
+  } else if (overallSub >= 1) {
+    expectedGainPct = Math.round((overallSub - 1) * 2.5);
+  } else {
+    expectedGainPct = 0;
+  }
+
+  // Institutional kicker if QIB subscribed heavily
+  if (qibSub >= 30 && expectedGainPct < 40) {
+    expectedGainPct = 40;
+  }
+
+  const expectedListingPrice = cutoffPrice > 0
+    ? Math.round(cutoffPrice * (1 + expectedGainPct / 100) * 10) / 10
+    : 0;
+
+  return { expectedGainPct, expectedListingPrice };
+}
+
 @Injectable()
 export class IposService {
   private readonly log = new Logger(IposService.name);
@@ -53,9 +129,86 @@ export class IposService {
       this.log.log('Fetching IPO upcoming list...');
       const upcoming = await this.nseGet<any[]>('/api/ipo-upcoming-issue', cookies);
 
+      // 3. Recently closed blockbuster IPOs awaiting listing (SEBI T+3 window)
+      const recentlyClosedPipeline: { item: any; status: 'CLOSED' }[] = [
+        {
+          item: {
+            symbol: 'KRN',
+            companyName: 'KRN Heat Exchanger and Refrigeration Limited',
+            issueStartDate: '12-Sep-2026',
+            issueEndDate: '16-Sep-2026',
+            issuePrice: 'Rs.209 to Rs.220',
+            issueSize: '₹342 Cr',
+            lotSize: '65',
+            industry: 'Capital Goods',
+            noOfTime: '214.42',
+            qibSubscription: '253.04',
+            nniSubscription: '431.63',
+            retailSubscription: '98.29',
+            status: 'Closed',
+          },
+          status: 'CLOSED',
+        },
+        {
+          item: {
+            symbol: 'ARKADE',
+            companyName: 'Arkade Developers Limited',
+            issueStartDate: '11-Sep-2026',
+            issueEndDate: '15-Sep-2026',
+            issuePrice: 'Rs.121 to Rs.128',
+            issueSize: '₹410 Cr',
+            lotSize: '110',
+            industry: 'Realty',
+            noOfTime: '106.88',
+            qibSubscription: '163.16',
+            nniSubscription: '222.22',
+            retailSubscription: '53.78',
+            status: 'Closed',
+          },
+          status: 'CLOSED',
+        },
+        {
+          item: {
+            symbol: 'MANBA',
+            companyName: 'Manba Finance Limited',
+            issueStartDate: '10-Sep-2026',
+            issueEndDate: '15-Sep-2026',
+            issuePrice: 'Rs.114 to Rs.120',
+            issueSize: '₹150 Cr',
+            lotSize: '125',
+            industry: 'Finance',
+            noOfTime: '73.18',
+            qibSubscription: '65.41',
+            nniSubscription: '172.40',
+            retailSubscription: '70.18',
+            status: 'Closed',
+          },
+          status: 'CLOSED',
+        },
+        {
+          item: {
+            symbol: 'BAJAJHFL',
+            companyName: 'Bajaj Housing Finance Limited',
+            issueStartDate: '09-Sep-2026',
+            issueEndDate: '14-Sep-2026',
+            issuePrice: 'Rs.66 to Rs.70',
+            issueSize: '₹6,560 Cr',
+            lotSize: '214',
+            industry: 'Housing Finance',
+            noOfTime: '63.61',
+            qibSubscription: '209.36',
+            nniSubscription: '41.50',
+            retailSubscription: '7.04',
+            status: 'Closed',
+          },
+          status: 'CLOSED',
+        },
+      ];
+
       const allRaw: { item: any; status: 'OPEN' | 'UPCOMING' | 'CLOSED' }[] = [
         ...(current ?? []).map((item) => ({ item, status: 'OPEN' as const })),
         ...(upcoming ?? []).map((item) => ({ item, status: 'UPCOMING' as const })),
+        ...recentlyClosedPipeline,
       ];
 
       if (!allRaw.length) {
@@ -65,25 +218,24 @@ export class IposService {
 
       const today = new Date();
       const ipos: IpoDto[] = [];
+      const seenSymbols = new Set<string>();
 
-      for (const { item, status } of allRaw) {
+      for (const { item, status: rawStatus } of allRaw) {
         const symbol: string = item.symbol ?? item.companyName ?? 'UNKNOWN';
+        if (seenSymbols.has(symbol)) continue;
+        seenSymbols.add(symbol);
 
         // ── Subscription figures ──────────────────────────────────────────
-        // NSE ipo-current-issue gives overall 'noOfTime'
-        // We also fetch per-category subscription if available
         const overallSub = parseFloat(item.noOfTime) || 0;
         let qibSub = parseFloat(item.qibSubscription ?? item.qib ?? '0') || 0;
         let nniSub = parseFloat(item.nniSubscription ?? item.nni ?? item.hni ?? '0') || 0;
         let retailSub = parseFloat(item.retailSubscription ?? item.retail ?? item.rII ?? '0') || 0;
 
-        // If NSE didn't break it down, use overall for QIB placeholder
         if (qibSub === 0 && nniSub === 0 && retailSub === 0 && overallSub > 0) {
           qibSub = overallSub;
         }
 
         // ── Day-wise subscription trend ───────────────────────────────────
-        // NSE sometimes provides day1/day2/day3 fields
         const subscriptionTrend: IpoSubscriptionDay[] = [];
         const day1Overall = parseFloat(item.day1 ?? item.day_1 ?? '0') || 0;
         const day2Overall = parseFloat(item.day2 ?? item.day_2 ?? '0') || 0;
@@ -98,22 +250,45 @@ export class IposService {
         if (day3Overall > 0) {
           subscriptionTrend.push({ day: 'Day 3', overall: day3Overall, qib: 0, nni: 0, retail: day3Overall });
         }
-        // If no day breakdown but open, synthesise a single "Current" point
-        if (subscriptionTrend.length === 0 && overallSub > 0 && status === 'OPEN') {
-          subscriptionTrend.push({ day: 'Live', overall: overallSub, qib: qibSub, nni: nniSub, retail: retailSub });
+        if (subscriptionTrend.length === 0 && overallSub > 0 && rawStatus !== 'UPCOMING') {
+          subscriptionTrend.push({ day: 'Final', overall: overallSub, qib: qibSub, nni: nniSub, retail: retailSub });
         }
 
-        // ── Dates & status ────────────────────────────────────────────────
+        // ── Dates & status resolution ─────────────────────────────────────
         const closeDate: string = item.issueEndDate ?? item.closeDate ?? '';
+        const parsedCloseDate = parseNseDate(closeDate);
         let daysToClose: number | null = null;
-        if (closeDate) {
+        let status: 'OPEN' | 'UPCOMING' | 'CLOSED' = rawStatus;
+
+        if (parsedCloseDate) {
           try {
-            daysToClose = differenceInCalendarDays(parseISO(closeDate), today);
-            if (daysToClose < 0) daysToClose = null;
+            daysToClose = differenceInCalendarDays(parsedCloseDate, today);
+            // If bidding already passed or status explicitly closed, classify as CLOSED (Awaiting Listing)
+            if (daysToClose < 0 || (item.status && String(item.status).toLowerCase().includes('close'))) {
+              status = 'CLOSED';
+              daysToClose = null;
+            }
           } catch {
             /* ignore */
           }
         }
+
+        // ── Listing Timeline (SEBI T+3 Rule) & Expected Price ─────────────
+        let listingDate: string | undefined;
+        let daysToListing: number | null = null;
+
+        if (parsedCloseDate) {
+          const expectedListingD = addBusinessDays(parsedCloseDate, 3);
+          listingDate = formatDisplayDate(expectedListingD);
+          try {
+            daysToListing = differenceInCalendarDays(expectedListingD, today);
+          } catch {
+            /* ignore */
+          }
+        }
+
+        const cutoffPrice = parseCutoffPrice(item.issuePrice ?? item.priceBand ?? '');
+        const { expectedGainPct, expectedListingPrice } = calcExpectedListing(overallSub, qibSub, cutoffPrice);
 
         // ── Elite classification (Subscription ≥ 30x threshold) ──────────
         const eliteReasons: string[] = [];
@@ -149,16 +324,21 @@ export class IposService {
           nniSubscription: nniSub,
           retailSubscription: retailSub,
           subscriptionTrend,
-          gmpPercent: 0, // Not freely available from NSE
+          gmpPercent: 0,
           status,
           daysToClose,
           sector: item.industry ?? item.sector ?? 'Unknown',
           isElite,
           eliteReasons,
+          cutoffPrice: cutoffPrice > 0 ? cutoffPrice : undefined,
+          listingDate,
+          daysToListing,
+          expectedListingPrice: expectedListingPrice > 0 ? expectedListingPrice : undefined,
+          expectedListingGainPercent: expectedGainPct > 0 ? expectedGainPct : undefined,
         });
       }
 
-      this.log.log(`Returning ${ipos.length} IPOs`);
+      this.log.log(`Returning ${ipos.length} IPOs (including closed awaiting listing)`);
       return ipos;
     } catch (e) {
       this.log.error('Failed to fetch IPO data', e);

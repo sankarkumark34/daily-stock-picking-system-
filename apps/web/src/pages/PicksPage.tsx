@@ -279,33 +279,33 @@ export function PicksTable({
         <table className="table-base">
           <thead>
             <tr>
-              <SortTh k="rank" sort={t.sort} className="w-10">#</SortTh>
-              <SortTh k="symbol" sort={t.sort}>Stock</SortTh>
+              <SortTh k="rank" sort={t.sort} className="w-10 px-4 py-3">#</SortTh>
+              <SortTh k="symbol" sort={t.sort} className="px-4 py-3">Stock</SortTh>
               {live && (
-                <th>
+                <th className="px-4 py-3">
                   <span className="inline-flex items-center gap-1.5">
                     Live vs plan <LiveBadge q={anyQuote} />
                   </span>
                 </th>
               )}
-              <SortTh k="setup" sort={t.sort} tip="setup">Setup</SortTh>
-              <SortTh k="score" sort={t.sort} align="right" tip="score">Score</SortTh>
-              <SortTh k="confidence" sort={t.sort} align="right" tip="confidence">Conf.</SortTh>
-              <SortTh k="entry" sort={t.sort} align="right" tip="entry">Entry</SortTh>
-              <SortTh k="target" sort={t.sort} align="right" tip="target">Target</SortTh>
-              <SortTh k="stopLoss" sort={t.sort} align="right" tip="stopLoss">Stop</SortTh>
-              <SortTh k="riskReward" sort={t.sort} align="right" tip="riskReward">R:R</SortTh>
+              <SortTh k="setup" sort={t.sort} tip="setup" className="px-4 py-3">Setup</SortTh>
+              <SortTh k="score" sort={t.sort} align="right" tip="score" className="px-4 py-3">Score</SortTh>
+              <SortTh k="confidence" sort={t.sort} align="right" tip="confidence" className="px-4 py-3">Conf.</SortTh>
+              <SortTh k="entry" sort={t.sort} align="right" tip="entry" className="px-4 py-3">Entry</SortTh>
+              <SortTh k="target" sort={t.sort} align="right" tip="target" className="px-4 py-3">Target</SortTh>
+              <SortTh k="stopLoss" sort={t.sort} align="right" tip="stopLoss" className="px-4 py-3">Stop</SortTh>
+              <SortTh k="riskReward" sort={t.sort} align="right" tip="riskReward" className="px-4 py-3">R:R</SortTh>
               {!compact && (
-                <th className="text-right">
-                  <span className="inline-flex items-center gap-1 font-semibold text-emerald-800" title="Live calculation based on your active trade value">
+                <th className="text-right px-4 py-3">
+                  <span className="inline-flex items-center gap-1 font-bold text-[#079B73]" title="Live calculation based on your active trade value">
                     ₹{tradeValue >= 100000 ? `${(tradeValue / 100000).toFixed(1)}L` : `${Math.round(tradeValue / 1000)}k`} Plan
                   </span>
                 </th>
               )}
-              {!compact && <SortTh k="holdDays" sort={t.sort} align="right" tip="holdDays">Hold</SortTh>}
-              <SortTh k="outcome" sort={t.sort} tip="outcome">Outcome</SortTh>
-              {!compact && <SortTh k="netReturnPct" sort={t.sort} align="right" tip="netReturn">Net</SortTh>}
-              <th className="w-8" />
+              {!compact && <SortTh k="holdDays" sort={t.sort} align="right" tip="holdDays" className="px-4 py-3">Hold</SortTh>}
+              <SortTh k="outcome" sort={t.sort} tip="outcome" className="px-4 py-3">Outcome</SortTh>
+              {!compact && <SortTh k="netReturnPct" sort={t.sort} align="right" tip="netReturn" className="px-4 py-3">Net</SortTh>}
+              <th className="w-8 px-2 py-3" />
             </tr>
           </thead>
           <motion.tbody variants={staggerList} initial="hidden" animate="show">
@@ -319,42 +319,56 @@ export function PicksTable({
 
               return (
                 <Fragment key={p.id}>
-                  <motion.tr variants={fadeUp} className={clsx('cursor-pointer', isOpen && 'bg-brand-50/40')} onClick={() => setOpen(isOpen ? null : p.id)} aria-expanded={isOpen}>
-                    <td className="text-ink-500 tnum">{p.rank}</td>
-                    <td>
+                  <motion.tr
+                    variants={fadeUp}
+                    className={clsx(
+                      'cursor-pointer transition-colors duration-150',
+                      isOpen ? 'bg-[#F0EBFF]/50' : 'hover:bg-[#F8FAFF]',
+                    )}
+                    onClick={() => setOpen(isOpen ? null : p.id)}
+                    aria-expanded={isOpen}
+                  >
+                    <td className="px-4 py-3 text-ink-400 font-bold tnum text-xs">{p.rank}</td>
+                    <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-ink-900">{p.symbol}</span>
-                        <span className="max-w-[220px] truncate text-[11px] text-ink-500">{p.name ?? p.sector}</span>
+                        <span className="stock-symbol">{p.symbol}</span>
+                        <span className="company-name max-w-[200px] truncate">{p.name ?? p.sector}</span>
                       </div>
                     </td>
                     {live && (
-                      <td onClick={(e) => e.stopPropagation()}>
-                        {p.outcome === 'OPEN' && !p.isBacktest ? <LiveVsPlan q={quoteOf(p.symbol)} entry={p.entry} target={p.target} stopLoss={p.stopLoss} /> : <span className="text-ink-400">–</span>}
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        {p.outcome === 'OPEN' && !p.isBacktest ? (
+                          <LiveVsPlan q={quoteOf(p.symbol)} entry={p.entry} target={p.target} stopLoss={p.stopLoss} />
+                        ) : (
+                          <span className="text-ink-400">–</span>
+                        )}
                       </td>
                     )}
-                    <td>
+                    <td className="px-4 py-3">
                       <Badge tone={setupTone(p.setup)}>{setupLabel(p.setup)}</Badge>
                     </td>
-                    <td className="num">
-                      <span className={clsx('font-semibold', { 'text-up-700': p.score >= 80, 'text-brand-700': p.score >= 70 && p.score < 80 })}>{fmt(p.score, 1)}</span>
+                    <td className="num px-4 py-3">
+                      <span className={clsx('font-bold', p.score >= 80 ? 'text-[#079B73]' : p.score >= 70 ? 'text-[#7046E8]' : 'text-ink-900')}>
+                        {fmt(p.score, 1)}
+                      </span>
                     </td>
-                    <td className="num">{p.confidence}%</td>
-                    <td className="num">{inr(p.entry)}</td>
-                    <td className="num text-up-700">{inr(p.target)}</td>
-                    <td className="num text-down-700">{inr(p.stopLoss)}</td>
-                    <td className="num">{fmt(p.riskReward, 2)}</td>
+                    <td className="num px-4 py-3 text-ink-700">{p.confidence}%</td>
+                    <td className="num px-4 py-3 font-semibold text-ink-900">{inr(p.entry)}</td>
+                    <td className="num px-4 py-3 font-bold text-[#079B73]">{inr(p.target)}</td>
+                    <td className="num px-4 py-3 font-bold text-[#D9234F]">{inr(p.stopLoss)}</td>
+                    <td className="num px-4 py-3 font-semibold text-ink-700">{fmt(p.riskReward, 2)}</td>
                     {!compact && (
-                      <td className="num" onClick={(e) => e.stopPropagation()}>
+                      <td className="num px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {!canAfford ? (
                           <span
-                            className="inline-flex items-center rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200"
+                            className="inline-flex items-center rounded bg-[#FFF8E7] px-2 py-0.5 text-[11px] font-bold text-[#D88A00] border border-[#FFEEC4]"
                             title={`1 share costs ${inr(p.entry)}, budget is ${inr(tradeValue)}`}
                           >
                             Needs {inr(p.entry, 0)}
                           </span>
                         ) : (
                           <div className="flex flex-col items-end leading-tight">
-                            <span className="font-bold text-emerald-700">
+                            <span className="font-bold text-[#079B73]">
                               {affordableShares} shs · +{inr(estProfit, 0)}
                             </span>
                             <span className="text-[10px] text-ink-500">
@@ -364,13 +378,17 @@ export function PicksTable({
                         )}
                       </td>
                     )}
-                    {!compact && <td className="num">{p.holdDays}d</td>}
-                    <td>
+                    {!compact && <td className="num px-4 py-3 text-ink-600">{p.holdDays}d</td>}
+                    <td className="px-4 py-3">
                       <Badge tone={outcomeTone(p.outcome)}>{outcomeLabel(p.outcome)}</Badge>
                     </td>
-                    {!compact && <td className={clsx('num', p.netReturnPct !== null && (p.netReturnPct >= 0 ? 'text-up-700' : 'text-down-700'))}>{pct(p.netReturnPct, 2, true)}</td>}
-                    <td className="text-ink-400">
-                      <ChevronDown size={16} className={clsx('transition-transform', isOpen && 'rotate-180')} />
+                    {!compact && (
+                      <td className={clsx('num px-4 py-3 font-bold', p.netReturnPct !== null && (p.netReturnPct >= 0 ? 'text-[#079B73]' : 'text-[#D9234F]'))}>
+                        {pct(p.netReturnPct, 2, true)}
+                      </td>
+                    )}
+                    <td className="px-2 py-3 text-ink-400">
+                      <ChevronDown size={16} className={clsx('transition-transform duration-200', isOpen && 'rotate-180 text-[#7046E8]')} />
                     </td>
                   </motion.tr>
                   <AnimatePresence initial={false}>
