@@ -15,6 +15,7 @@ import type {
   PickDto,
   StockDetailDto,
   IpoDto,
+  PreMarketWatchlistDto,
 } from '@nse/shared'
 
 export class ApiError extends Error {
@@ -277,3 +278,11 @@ export const useTrainCircuitModel = () => {
     onSuccess: () => invalidate('circuit'),
   })
 }
+
+export const usePreMarketWatchlist = (date?: string) =>
+  useQuery({
+    queryKey: ['premarket', 'watchlist', date ?? 'latest'],
+    queryFn: () => api.get<PreMarketWatchlistDto>(`/premarket/watchlist${qs({ date })}`),
+    refetchInterval: 60_000,
+  })
+

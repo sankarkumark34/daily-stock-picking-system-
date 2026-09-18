@@ -674,3 +674,74 @@ export interface IpoDto {
   listingDateNote?: string;
 }
 
+/* ---------------- Pre-Market Watchlist (9:15–9:30 AM Window) ---------------- */
+
+export type PreMarketDirection = 'LONG' | 'SHORT';
+export type PreMarketTradeType = 'INTRADAY' | 'BTST';
+export type PreMarketSignal =
+  | 'LONG_BREAKOUT'
+  | 'LONG_GAP_UP'
+  | 'LONG_PULLBACK'
+  | 'LONG_BTST'
+  | 'SHORT_BREAKDOWN'
+  | 'SHORT_GAP_DOWN'
+  | 'SHORT_REVERSAL'
+  | 'SHORT_BTST';
+
+export interface PreMarketPickDto {
+  id: string;
+  symbol: string;
+  name: string | null;
+  sector: string;
+  rank: number;
+  direction: PreMarketDirection;
+  tradeType: PreMarketTradeType;
+  signal: PreMarketSignal;
+  signalLabel: string;
+  prevClose: number;
+  expectedOpenMin: number;
+  expectedOpenMax: number;
+  entryZone: string;
+  targetPrice: number;
+  targetPct: number;
+  stopLossPrice: number;
+  stopLossPct: number;
+  riskReward: number;
+  confidenceScore: number;
+  lotSize: number;
+  capitalRequired: number;
+  expectedMaxLoss: number;
+  expectedMaxGain: number;
+  window: string;
+  reasons: string[];
+  catalysts: string[];
+  sparkline: number[];
+  volSurgeMultiplier: number;
+  rsi: number;
+  atr: number;
+}
+
+export interface PreMarketSectorOverview {
+  sector: string;
+  bias: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  score: number;
+  pickCount: number;
+  topPickSymbol?: string;
+}
+
+export interface PreMarketWatchlistDto {
+  asOfDate: string;
+  nextTradeDate: string;
+  marketSentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  regime: MarketRegime;
+  recommendedCapitalRange: string;
+  windowNotice: string;
+  topSectors: PreMarketSectorOverview[];
+  picks: PreMarketPickDto[];
+  totalAnalyzed: number;
+  longCount: number;
+  shortCount: number;
+  intradayCount: number;
+  btstCount: number;
+}
+

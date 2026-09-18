@@ -9,11 +9,11 @@ import { EngineModule } from './engine/engine.module.js';
 import { LiveModule } from './live/live.module.js';
 import { IposModule } from './ipos/ipos.module.js';
 import { CircuitModule } from './circuit/circuit.module.js';
+import { PreMarketModule } from './premarket/premarket.module.js';
 import { SchedulerService } from './scheduler/scheduler.service.js';
 
 @Module({
-  imports: [DatabaseModule, ScheduleModule.forRoot(), DataModule, EngineModule, BacktestModule, ApiModule, AnalystModule, LiveModule, IposModule, CircuitModule],
+  imports: [DatabaseModule, ScheduleModule.forRoot(), DataModule, EngineModule, BacktestModule, ApiModule, AnalystModule, LiveModule, IposModule, CircuitModule, PreMarketModule],
   providers: [SchedulerService],
-
 })
 export class AppModule {}

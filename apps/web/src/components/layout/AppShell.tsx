@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   CheckCircle2,
+  Clock,
   Database,
   FlaskConical,
   Info,
@@ -33,6 +34,7 @@ import {
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/premarket', label: 'Pre-Market (9:15)', icon: Clock },
   { to: '/circuit', label: 'Circuit Radar', icon: Zap },
   { to: '/elite', label: 'Elite Pick', icon: Star, highlight: true },
   { to: '/picks', label: 'Daily Picks', icon: ListOrdered },
