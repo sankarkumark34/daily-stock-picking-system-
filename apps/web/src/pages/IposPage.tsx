@@ -460,7 +460,7 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
               )}
               {ipo.daysToListing !== null && ipo.daysToListing !== undefined && ipo.status === 'CLOSED' && (
                 <span className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  🗓️ {ipo.daysToListing === 0 ? 'Listing Today!' : `Listing in ${ipo.daysToListing}d`}
+                  🗓️ {ipo.daysToListing === 0 ? 'Listing Today!' : `Tentative Listing in ${ipo.daysToListing}d`}
                 </span>
               )}
             </div>
@@ -481,11 +481,16 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-ink-600 flex items-center gap-1.5">
                 <CalendarDays size={13} className="text-purple-600" />
-                Expected Listing Date:
+                {ipo.isListingDateConfirmed ? 'Official Listing Date:' : 'Tentative Listing Date:'}
               </span>
-              <span className="font-bold text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md">
-                {ipo.listingDate ? fmtDate(ipo.listingDate) : 'T+3 (Upcoming)'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-purple-900 bg-purple-100/90 px-2 py-0.5 rounded-md">
+                  {ipo.listingDate ? fmtDate(ipo.listingDate) : 'T+3 (Upcoming)'}
+                </span>
+                <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 py-0.2 rounded">
+                  {ipo.isListingDateConfirmed ? 'Official' : 'SEBI T+3'}
+                </span>
+              </div>
             </div>
 
             <div className="mt-2.5 pt-2 border-t border-purple-100/70 flex items-center justify-between">
@@ -513,7 +518,18 @@ function IpoCard({ ipo, expanded, onToggle }: { ipo: IpoDto; expanded: boolean; 
           <InfoCell icon={<CalendarDays size={12} />} label="Open" value={fmtDate(ipo.openDate)} />
           <InfoCell icon={<CalendarDays size={12} />} label="Close" value={fmtDate(ipo.closeDate)} />
           {ipo.listingDate && (
-            <InfoCell icon={<CalendarDays size={12} />} label="Listing Debut" value={fmtDate(ipo.listingDate)} />
+            <InfoCell
+              icon={<CalendarDays size={12} />}
+              label={ipo.isListingDateConfirmed ? 'Official Listing' : 'Tentative Listing'}
+              tag={ipo.isListingDateConfirmed ? 'Official' : 'SEBI T+3'}
+              value={fmtDate(ipo.listingDate)}
+              tooltip={
+                ipo.listingDateNote ||
+                (ipo.isListingDateConfirmed
+                  ? 'Official listing date confirmed by exchange notice circular.'
+                  : 'Tentative date computed per SEBI T+3 mandate (3 business days post issue close). Exchange confirms official date after allotment.')
+              }
+            />
           )}
           <InfoCell icon={<TrendingUp size={12} />} label="Price Band" value={ipo.priceBand || '—'} />
           <InfoCell icon={<Layers size={12} />} label="Issue Size" value={ipo.issueSize || '—'} />
@@ -703,7 +719,7 @@ function AnalysisSummary({ ipo }: { ipo: IpoDto }) {
       text:
         ipo.daysToListing === 0
           ? 'Lists on NSE/BSE TODAY! Watch pre-open order discovery at 9:00 AM.'
-          : `Listing scheduled in ${ipo.daysToListing} business days (${fmtDate(ipo.listingDate || '')}) under SEBI T+3 rule.`,
+          : `${ipo.isListingDateConfirmed ? 'Official' : 'Tentative'} listing scheduled in ${ipo.daysToListing} business days (${fmtDate(ipo.listingDate || '')}) under SEBI T+3 timeline${ipo.isListingDateConfirmed ? '' : ' (official notice issued post-allotment)'}.`,
       tone: 'neutral',
     })
   }
@@ -748,12 +764,40 @@ function AnalysisSummary({ ipo }: { ipo: IpoDto }) {
   )
 }
 
-function InfoCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoCell({
+  icon,
+  label,
+  value,
+  tag,
+  tooltip,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  tag?: string
+  tooltip?: string
+}) {
+  const header = (
+    <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ink-400 mb-0.5">
+      {icon}
+      <span>{label}</span>
+      {tag && (
+        <span className="rounded bg-purple-50 border border-purple-200/80 px-1 py-0.2 text-[8px] font-bold text-purple-700 normal-case tracking-normal">
+          {tag}
+        </span>
+      )}
+    </div>
+  )
+
   return (
     <div>
-      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-ink-400 mb-0.5">
-        {icon} {label}
-      </div>
+      {tooltip ? (
+        <UiTooltip content={tooltip} className="inline-block cursor-help">
+          {header}
+        </UiTooltip>
+      ) : (
+        header
+      )}
       <div className="font-medium text-ink-800">{value}</div>
     </div>
   )

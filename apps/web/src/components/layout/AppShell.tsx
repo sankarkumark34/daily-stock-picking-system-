@@ -283,7 +283,7 @@ function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
                   <Info size={13} className="text-[#7046E8]" /> Blockbuster IPO Listing Radar
                 </p>
                 <p className="mt-0.5 text-[11px] text-ink-500">
-                  4 closed IPOs (KRN, ARKADE, MANBA, BAJAJHFL) awaiting listing under SEBI T+3 rule.
+                  Live IPO radar tracking active issues, demand tiers & expected listing debuts.
                 </p>
               </div>
               <div className="p-3 hover:bg-[#F8FAFF] transition-colors">

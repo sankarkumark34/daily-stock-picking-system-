@@ -668,5 +668,9 @@ export interface IpoDto {
   expectedListingPrice?: number;
   /** Expected listing gain percentage (e.g. +28.5%) */
   expectedListingGainPercent?: number;
+  /** Whether the listing date is officially confirmed by exchange circular vs tentative SEBI T+3 estimate */
+  isListingDateConfirmed?: boolean;
+  /** Explanatory note about listing date status (e.g. Tentative T+3 estimate) */
+  listingDateNote?: string;
 }
 

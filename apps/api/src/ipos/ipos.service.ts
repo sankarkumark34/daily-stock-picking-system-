@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import type { IpoDto, IpoSubscriptionDay } from '@nse/shared';
-import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
+import { StockEntity } from '../database/entities/stock.entity.js';
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -27,6 +30,13 @@ function parseCutoffPrice(str: string): number {
   const matches = str.match(/\d+(?:\.\d+)?/g);
   if (!matches || matches.length === 0) return 0;
   return Math.max(...matches.map(Number));
+}
+
+/** Extract lot size from string (e.g. "161 Equity Shares" -> 161) */
+function parseLotSize(str: string): number {
+  if (!str) return 0;
+  const matches = str.match(/\d+/);
+  return matches ? parseInt(matches[0], 10) : 0;
 }
 
 /** Add business days (skipping weekends) for SEBI T+3 IPO listing mandate */
@@ -81,9 +91,21 @@ function calcExpectedListing(overallSub: number, qibSub: number, cutoffPrice: nu
   return { expectedGainPct, expectedListingPrice };
 }
 
+interface CachedIpos {
+  timestamp: number;
+  data: IpoDto[];
+}
+
 @Injectable()
 export class IposService {
   private readonly log = new Logger(IposService.name);
+  private cache: CachedIpos | null = null;
+  private readonly CACHE_TTL_MS = 60_000; // 1 minute cache
+
+  constructor(
+    @InjectRepository(StockEntity)
+    private readonly stockRepo: Repository<StockEntity>,
+  ) { }
 
   /** Fetch NSE cookies needed for subsequent API calls */
   private async getNseCookies(): Promise<string> {
@@ -117,98 +139,31 @@ export class IposService {
   }
 
   async getUpcomingIpos(): Promise<IpoDto[]> {
+    // Return cached data if fresh
+    if (this.cache && Date.now() - this.cache.timestamp < this.CACHE_TTL_MS) {
+      return this.cache.data;
+    }
+
     try {
       this.log.log('Fetching NSE cookies...');
       const cookies = await this.getNseCookies();
 
-      // 1. Current/open IPOs
-      this.log.log('Fetching IPO current issue list...');
+      // 1. Fetch current/open IPOs
+      this.log.log('Fetching IPO current issues from NSE...');
       const current = await this.nseGet<any[]>('/api/ipo-current-issue', cookies);
 
-      // 2. Upcoming IPOs
-      this.log.log('Fetching IPO upcoming list...');
-      const upcoming = await this.nseGet<any[]>('/api/ipo-upcoming-issue', cookies);
+      // 2. Fetch upcoming IPOs (proper NSE endpoint)
+      this.log.log('Fetching IPO upcoming issues from NSE...');
+      const upcoming = await this.nseGet<any[]>('/api/all-upcoming-issues?category=ipo', cookies);
 
-      // 3. Recently closed blockbuster IPOs awaiting listing (SEBI T+3 window)
-      const recentlyClosedPipeline: { item: any; status: 'CLOSED' }[] = [
-        {
-          item: {
-            symbol: 'KRN',
-            companyName: 'KRN Heat Exchanger and Refrigeration Limited',
-            issueStartDate: '12-Sep-2026',
-            issueEndDate: '16-Sep-2026',
-            issuePrice: 'Rs.209 to Rs.220',
-            issueSize: '₹342 Cr',
-            lotSize: '65',
-            industry: 'Capital Goods',
-            noOfTime: '214.42',
-            qibSubscription: '253.04',
-            nniSubscription: '431.63',
-            retailSubscription: '98.29',
-            status: 'Closed',
-          },
-          status: 'CLOSED',
-        },
-        {
-          item: {
-            symbol: 'ARKADE',
-            companyName: 'Arkade Developers Limited',
-            issueStartDate: '11-Sep-2026',
-            issueEndDate: '15-Sep-2026',
-            issuePrice: 'Rs.121 to Rs.128',
-            issueSize: '₹410 Cr',
-            lotSize: '110',
-            industry: 'Realty',
-            noOfTime: '106.88',
-            qibSubscription: '163.16',
-            nniSubscription: '222.22',
-            retailSubscription: '53.78',
-            status: 'Closed',
-          },
-          status: 'CLOSED',
-        },
-        {
-          item: {
-            symbol: 'MANBA',
-            companyName: 'Manba Finance Limited',
-            issueStartDate: '10-Sep-2026',
-            issueEndDate: '15-Sep-2026',
-            issuePrice: 'Rs.114 to Rs.120',
-            issueSize: '₹150 Cr',
-            lotSize: '125',
-            industry: 'Finance',
-            noOfTime: '73.18',
-            qibSubscription: '65.41',
-            nniSubscription: '172.40',
-            retailSubscription: '70.18',
-            status: 'Closed',
-          },
-          status: 'CLOSED',
-        },
-        {
-          item: {
-            symbol: 'BAJAJHFL',
-            companyName: 'Bajaj Housing Finance Limited',
-            issueStartDate: '09-Sep-2026',
-            issueEndDate: '14-Sep-2026',
-            issuePrice: 'Rs.66 to Rs.70',
-            issueSize: '₹6,560 Cr',
-            lotSize: '214',
-            industry: 'Housing Finance',
-            noOfTime: '63.61',
-            qibSubscription: '209.36',
-            nniSubscription: '41.50',
-            retailSubscription: '7.04',
-            status: 'Closed',
-          },
-          status: 'CLOSED',
-        },
-      ];
+      // 3. Query all listed symbols in secondary market to prevent already-listed stocks from appearing
+      const listedStocks = await this.stockRepo.find({ select: { symbol: true } });
+      const listedSymbols = new Set(listedStocks.map((s) => s.symbol.toUpperCase()));
+      this.log.log(`Loaded ${listedSymbols.size} listed stock symbols for filtering.`);
 
-      const allRaw: { item: any; status: 'OPEN' | 'UPCOMING' | 'CLOSED' }[] = [
-        ...(current ?? []).map((item) => ({ item, status: 'OPEN' as const })),
-        ...(upcoming ?? []).map((item) => ({ item, status: 'UPCOMING' as const })),
-        ...recentlyClosedPipeline,
+      const allRaw: { item: any; source: 'CURRENT' | 'UPCOMING' }[] = [
+        ...(current ?? []).map((item) => ({ item, source: 'CURRENT' as const })),
+        ...(upcoming ?? []).map((item) => ({ item, source: 'UPCOMING' as const })),
       ];
 
       if (!allRaw.length) {
@@ -220,20 +175,116 @@ export class IposService {
       const ipos: IpoDto[] = [];
       const seenSymbols = new Set<string>();
 
-      for (const { item, status: rawStatus } of allRaw) {
-        const symbol: string = item.symbol ?? item.companyName ?? 'UNKNOWN';
-        if (seenSymbols.has(symbol)) continue;
-        seenSymbols.add(symbol);
+      for (const { item, source } of allRaw) {
+        const symbol: string = (item.symbol ?? item.companyName ?? '').trim();
+        if (!symbol || seenSymbols.has(symbol.toUpperCase())) continue;
+        seenSymbols.add(symbol.toUpperCase());
+
+        // CRITICAL FILTER: If this symbol is already listed in the secondary market, exclude it!
+        if (listedSymbols.has(symbol.toUpperCase())) {
+          this.log.debug(`Skipping already-listed stock: ${symbol}`);
+          continue;
+        }
+
+        // Fetch detailed breakdown from /api/ipo-detail?symbol=...
+        let detailData: any = null;
+        try {
+          detailData = await this.nseGet<any>(`/api/ipo-detail?symbol=${encodeURIComponent(symbol)}`, cookies);
+        } catch {
+          /* ignore detail fetch errors */
+        }
 
         // ── Subscription figures ──────────────────────────────────────────
-        const overallSub = parseFloat(item.noOfTime) || 0;
+        let overallSub = parseFloat(item.noOfTime) || 0;
         let qibSub = parseFloat(item.qibSubscription ?? item.qib ?? '0') || 0;
         let nniSub = parseFloat(item.nniSubscription ?? item.nni ?? item.hni ?? '0') || 0;
         let retailSub = parseFloat(item.retailSubscription ?? item.retail ?? item.rII ?? '0') || 0;
 
+        // Parse from detailData if available
+        if (detailData && Array.isArray(detailData.bidDetails)) {
+          for (const b of detailData.bidDetails) {
+            const cat = (b.category || '').toLowerCase();
+            const val = parseFloat(b.noOfTime) || 0;
+            if (cat === 'total' && val > 0) {
+              overallSub = val;
+            } else if (cat.includes('qualified institutional buyers') && val > 0) {
+              qibSub = val;
+            } else if ((cat === 'non institutional investors' || cat.includes('non institutional')) && val > 0 && nniSub === 0) {
+              nniSub = val;
+            } else if (cat.includes('retail individual investors') && val > 0) {
+              retailSub = val;
+            }
+          }
+        }
+
         if (qibSub === 0 && nniSub === 0 && retailSub === 0 && overallSub > 0) {
           qibSub = overallSub;
         }
+
+        // ── Lot size & price from issueInfo if available ──────────────────
+        let lotSize = parseInt(item.lotSize ?? '0', 10) || 0;
+        let priceBand = item.issuePrice ?? item.priceBand ?? '—';
+        let issueSize = item.issueSize ?? item.totalIssueSize ?? '—';
+
+        if (detailData?.issueInfo?.dataList && Array.isArray(detailData.issueInfo.dataList)) {
+          for (const row of detailData.issueInfo.dataList) {
+            const title = (row.title || '').toLowerCase();
+            if (title.includes('bid lot') && lotSize === 0) {
+              lotSize = parseLotSize(row.value);
+            } else if (title.includes('price range') && priceBand === '—') {
+              priceBand = row.value;
+            } else if (title.includes('issue size') && issueSize === '—') {
+              issueSize = row.value;
+            }
+          }
+        }
+
+        // ── Dates & status resolution ─────────────────────────────────────
+        const openDate: string = item.issueStartDate ?? item.openDate ?? '';
+        const closeDate: string = item.issueEndDate ?? item.closeDate ?? '';
+        const parsedOpenDate = parseNseDate(openDate);
+        const parsedCloseDate = parseNseDate(closeDate);
+
+        let daysToClose: number | null = null;
+        let daysToListing: number | null = null;
+        let listingDate: string | undefined;
+        let status: 'OPEN' | 'UPCOMING' | 'CLOSED' = source === 'UPCOMING' ? 'UPCOMING' : 'OPEN';
+
+        if (parsedCloseDate) {
+          try {
+            daysToClose = differenceInCalendarDays(parsedCloseDate, today);
+            const expectedListingD = addBusinessDays(parsedCloseDate, 3);
+            listingDate = formatDisplayDate(expectedListingD);
+            daysToListing = differenceInCalendarDays(expectedListingD, today);
+
+            // If bidding has closed:
+            if (daysToClose < 0 || (item.status && String(item.status).toLowerCase().includes('close'))) {
+              // If listing date has already passed, this issue has already debuted and is no longer an IPO awaiting listing!
+              if (daysToListing < 0 || daysToClose < -4) {
+                this.log.debug(`Skipping past-listed IPO: ${symbol} (Listing was ${listingDate})`);
+                continue;
+              }
+              // Still inside SEBI T+3 listing window
+              status = 'CLOSED';
+              daysToClose = null;
+            }
+          } catch {
+            /* ignore date diff errors */
+          }
+        }
+
+        if (status !== 'CLOSED' && parsedOpenDate) {
+          const daysToOpen = differenceInCalendarDays(parsedOpenDate, today);
+          if (daysToOpen > 0) {
+            status = 'UPCOMING';
+          } else {
+            status = 'OPEN';
+          }
+        }
+
+        // ── Expected listing calculation ──────────────────────────────────
+        const cutoffPrice = parseCutoffPrice(priceBand);
+        const { expectedGainPct, expectedListingPrice } = calcExpectedListing(overallSub, qibSub, cutoffPrice);
 
         // ── Day-wise subscription trend ───────────────────────────────────
         const subscriptionTrend: IpoSubscriptionDay[] = [];
@@ -250,45 +301,9 @@ export class IposService {
         if (day3Overall > 0) {
           subscriptionTrend.push({ day: 'Day 3', overall: day3Overall, qib: 0, nni: 0, retail: day3Overall });
         }
-        if (subscriptionTrend.length === 0 && overallSub > 0 && rawStatus !== 'UPCOMING') {
+        if (subscriptionTrend.length === 0 && overallSub > 0 && status !== 'UPCOMING') {
           subscriptionTrend.push({ day: 'Final', overall: overallSub, qib: qibSub, nni: nniSub, retail: retailSub });
         }
-
-        // ── Dates & status resolution ─────────────────────────────────────
-        const closeDate: string = item.issueEndDate ?? item.closeDate ?? '';
-        const parsedCloseDate = parseNseDate(closeDate);
-        let daysToClose: number | null = null;
-        let status: 'OPEN' | 'UPCOMING' | 'CLOSED' = rawStatus;
-
-        if (parsedCloseDate) {
-          try {
-            daysToClose = differenceInCalendarDays(parsedCloseDate, today);
-            // If bidding already passed or status explicitly closed, classify as CLOSED (Awaiting Listing)
-            if (daysToClose < 0 || (item.status && String(item.status).toLowerCase().includes('close'))) {
-              status = 'CLOSED';
-              daysToClose = null;
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-
-        // ── Listing Timeline (SEBI T+3 Rule) & Expected Price ─────────────
-        let listingDate: string | undefined;
-        let daysToListing: number | null = null;
-
-        if (parsedCloseDate) {
-          const expectedListingD = addBusinessDays(parsedCloseDate, 3);
-          listingDate = formatDisplayDate(expectedListingD);
-          try {
-            daysToListing = differenceInCalendarDays(expectedListingD, today);
-          } catch {
-            /* ignore */
-          }
-        }
-
-        const cutoffPrice = parseCutoffPrice(item.issuePrice ?? item.priceBand ?? '');
-        const { expectedGainPct, expectedListingPrice } = calcExpectedListing(overallSub, qibSub, cutoffPrice);
 
         // ── Elite classification (Subscription ≥ 30x threshold) ──────────
         const eliteReasons: string[] = [];
@@ -314,11 +329,11 @@ export class IposService {
         ipos.push({
           symbol,
           companyName: item.companyName ?? symbol,
-          openDate: item.issueStartDate ?? item.openDate ?? '',
+          openDate,
           closeDate,
-          priceBand: item.issuePrice ?? item.priceBand ?? '—',
-          issueSize: item.issueSize ?? item.totalIssueSize ?? '—',
-          lotSize: parseInt(item.lotSize ?? '0', 10) || 0,
+          priceBand,
+          issueSize,
+          lotSize,
           overallSubscription: overallSub,
           qibSubscription: qibSub,
           nniSubscription: nniSub,
@@ -327,22 +342,26 @@ export class IposService {
           gmpPercent: 0,
           status,
           daysToClose,
-          sector: item.industry ?? item.sector ?? 'Unknown',
+          sector: item.industry ?? item.sector ?? 'General',
           isElite,
           eliteReasons,
           cutoffPrice: cutoffPrice > 0 ? cutoffPrice : undefined,
           listingDate,
-          daysToListing,
+          daysToListing: daysToListing !== null && daysToListing >= 0 ? daysToListing : undefined,
+          isListingDateConfirmed: false,
+          listingDateNote: 'Tentative date computed per SEBI T+3 mandate (3 business days post issue close). Official listing date notified by NSE circular post-allotment.',
           expectedListingPrice: expectedListingPrice > 0 ? expectedListingPrice : undefined,
           expectedListingGainPercent: expectedGainPct > 0 ? expectedGainPct : undefined,
         });
       }
 
-      this.log.log(`Returning ${ipos.length} IPOs (including closed awaiting listing)`);
+      this.log.log(`Returning ${ipos.length} real live IPOs`);
+      this.cache = { timestamp: Date.now(), data: ipos };
       return ipos;
     } catch (e) {
       this.log.error('Failed to fetch IPO data', e);
-      return [];
+      return this.cache ? this.cache.data : [];
     }
   }
 }
+

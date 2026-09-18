@@ -78,8 +78,8 @@ export function DashboardPage() {
           rTone === 'success'
             ? `Market breadth is expansive with A/D ratio at ${fmt(overview.breadth.advanceDeclineRatio, 2)} and ${fmt(overview.breadth.pctAboveSma50, 0)}% of universe stocks trading above 50-SMA. Prioritize top-ranked momentum breakouts while keeping stops disciplined.`
             : rTone === 'danger'
-            ? `Defensive stance recommended. Capital preservation is priority under elevated volatility. Avoid fresh swing longs without confirmed reversal volume.`
-            : `Selective market rotation underway. Equal-weighted sectors displaying selective leadership. Calibrate position sizes to 50% standard risk.`
+              ? `Defensive stance recommended. Capital preservation is priority under elevated volatility. Avoid fresh swing longs without confirmed reversal volume.`
+              : `Selective market rotation underway. Equal-weighted sectors displaying selective leadership. Calibrate position sizes to 50% standard risk.`
         }
         action={
           <Link
