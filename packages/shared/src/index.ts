@@ -708,6 +708,8 @@ export interface PreMarketPickDto {
   stopLossPct: number;
   riskReward: number;
   confidenceScore: number;
+  winProbability: number;
+  priorityTier: 'TOP_FOCUS' | 'HIGH' | 'MODERATE';
   lotSize: number;
   capitalRequired: number;
   expectedMaxLoss: number;
@@ -737,6 +739,7 @@ export interface PreMarketWatchlistDto {
   recommendedCapitalRange: string;
   windowNotice: string;
   topSectors: PreMarketSectorOverview[];
+  topPriorityPicks: PreMarketPickDto[];
   picks: PreMarketPickDto[];
   totalAnalyzed: number;
   longCount: number;

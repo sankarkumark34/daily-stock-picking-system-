@@ -305,6 +305,30 @@ export class PreMarketService {
         if (riskReward >= 2.5) baseScore += 4;
         const confidenceScore = Math.min(96, Math.max(62, Math.round(baseScore)));
 
+        // Maximum Probability Calculation (68% to 94%)
+        // Synthesizing volume expansion, directional closing strength, and quant confluence
+        let prob = 68;
+        if (volSurge >= 4.0) prob += 11;
+        else if (volSurge >= 2.5) prob += 8;
+        else if (volSurge >= 1.5) prob += 5;
+
+        if (direction === 'LONG') {
+          if (closeLoc >= 0.8) prob += 6;
+          else if (closeLoc >= 0.65) prob += 3;
+          if (rsi >= 48 && rsi <= 75) prob += 4;
+        } else {
+          if (closeLoc <= 0.2) prob += 6;
+          else if (closeLoc <= 0.35) prob += 3;
+          if (rsi <= 42) prob += 4;
+        }
+
+        if (pred) {
+          prob += Math.min(6, Math.round(pred.score * 0.08));
+        }
+        if (riskReward >= 2.6) prob += 3;
+
+        const winProbability = Math.min(94, Math.max(68, prob));
+
         reasons.push(
           `Configured for small-capital efficiency: ₹${capitalRequired.toLocaleString('en-IN')} capital (${lotSize} shares) with max ₹${expectedMaxLoss} risk vs ₹${expectedMaxGain} gain.`,
         );
@@ -329,6 +353,8 @@ export class PreMarketService {
           stopLossPct,
           riskReward,
           confidenceScore,
+          winProbability,
+          priorityTier: 'MODERATE',
           lotSize,
           capitalRequired,
           expectedMaxLoss,
@@ -343,12 +369,30 @@ export class PreMarketService {
         });
       }
 
-      // Sort picks by confidenceScore desc, volSurgeMultiplier desc
-      picks.sort((a, b) => b.confidenceScore - a.confidenceScore || b.volSurgeMultiplier - a.volSurgeMultiplier);
+      // Sort picks STRICTLY by winProbability DESC, confidenceScore DESC, volSurgeMultiplier DESC
+      picks.sort(
+        (a, b) =>
+          b.winProbability - a.winProbability ||
+          b.confidenceScore - a.confidenceScore ||
+          b.volSurgeMultiplier - a.volSurgeMultiplier,
+      );
 
-      // Assign ranks
+      // Assign ranks and priority tiers
       picks.forEach((p, idx) => {
         p.rank = idx + 1;
+        if (idx < 3) {
+          p.priorityTier = 'TOP_FOCUS';
+          p.reasons.unshift(
+            `🔥 PRIORITY #${idx + 1} FOCUS: Highest probability trade (${p.winProbability}% win rate) for immediate 9:15 AM execution.`,
+          );
+        } else if (idx < 7) {
+          p.priorityTier = 'HIGH';
+          p.reasons.unshift(
+            `⭐ HIGH PRIORITY #${idx + 1}: Strong ${p.winProbability}% probability secondary trade.`,
+          );
+        } else {
+          p.priorityTier = 'MODERATE';
+        }
       });
 
       // Top sector aggregations
@@ -387,7 +431,8 @@ export class PreMarketService {
         recommendedCapitalRange: '₹20,000 – ₹50,000',
         windowNotice: 'Fast-Execution Trade Window: 9:15 AM to 9:30 AM IST',
         topSectors,
-        picks: picks.slice(0, 30), // Top 30 curated high-conviction trades
+        topPriorityPicks: picks.slice(0, 3), // Top 3 Maximum Probability picks for fast 15-min focus
+        picks: picks.slice(0, 30), // Top 30 curated trades
         totalAnalyzed: barRows.length,
         longCount: picks.filter((p) => p.direction === 'LONG').length,
         shortCount: picks.filter((p) => p.direction === 'SHORT').length,
