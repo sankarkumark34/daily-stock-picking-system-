@@ -748,3 +748,126 @@ export interface PreMarketWatchlistDto {
   btstCount: number;
 }
 
+/* ---------------- 10-Day Swing Trading System (NSE Cash & Delivery) ---------------- */
+
+export type SwingStrategyType =
+  | 'EMA_PULLBACK'        // Strategy A: EMA Pullback (Trend Continuation)
+  | 'VOLUME_BREAKOUT'     // Strategy B: Volume Breakout + Relative Strength
+  | 'MINERVINI_VCP'       // Strategy 10: Volatility Contraction Pattern
+  | 'FLAG_PENNANT'        // Strategy 17: Flag / Pennant Continuation
+  | 'SR_FLIP'             // Strategy 20: Support-Resistance Flip Retest
+  | 'SUPERTREND_RIDER'    // Strategy 3: Supertrend (10,3) Trend Rider
+  | 'NR7_INSIDE_BAR'      // Strategy 9: Inside Bar / NR7 Range Contraction
+  | 'DELIVERY_SURGE';     // Strategy 23: Delivery % Surge Accumulation
+
+export interface SwingPositionSizing {
+  capitalBase: number;
+  riskPct: number;
+  riskAmount: number;
+  suggestedQty: number;
+  tradeValue: number;
+  capitalAllocPct: number;
+  maxLoss: number;
+  target1Profit: number;
+  target2Profit: number;
+}
+
+export interface SwingCombineChecklist {
+  marketTrend: boolean;       // Nifty > 50 EMA
+  sectorStrength: boolean;    // Sector RS vs Nifty > 0
+  stockRs: boolean;           // Stock RS vs Nifty > 0
+  setupPurity: boolean;       // Strategy criteria verified
+  riskRewardValid: boolean;   // R:R >= 1:2.0 verified
+  tenDayFeasible: boolean;    // Target reachable in <= 3.5 ATR moves
+}
+
+export interface SwingTechnicalDetails {
+  close: number;
+  changePct: number;
+  ema20: number;
+  ema50: number;
+  sma200: number;
+  ema20Slope: number;
+  ema50Slope: number;
+  atr14: number;
+  atrPct: number;
+  relVol: number;
+  avgVolume20: number;
+  deliveryPct?: number;
+  avgDeliveryPct?: number;
+  deliverySurgeRatio?: number;
+  rsi14: number;
+  adx14: number;
+  rsVsNifty60d: number;
+  rsVsNifty20d: number;
+  distanceTo52wHighPct: number;
+  high52w: number;
+  low52w: number;
+  baseWidthDays?: number;
+  baseDepthPct?: number;
+  sparkline: number[];
+}
+
+export interface SwingTradingPickDto {
+  id: string;
+  rank: number;
+  symbol: string;
+  name: string | null;
+  sector: string;
+  strategy: SwingStrategyType;
+  strategyName: string;
+  strategyTag: 'STRATEGY_A' | 'STRATEGY_B' | 'CONFLUENCE_SETUP';
+  entry: number;
+  entryRange: { min: number; max: number };
+  stopLoss: number;
+  stopLossPct: number;
+  stopLossType: string;
+  target1: number;
+  target1Pct: number;
+  target2: number;
+  target2Pct: number;
+  riskReward: number;
+  holdPeriodDays: number;
+  expectedDaysToTarget: number;
+  tenDayTargetFeasibility: 'OPTIMAL' | 'HIGH' | 'MODERATE';
+  confluenceScore: number;
+  winProbability: number;
+  positionSizing: SwingPositionSizing;
+  checklist: SwingCombineChecklist;
+  technical: SwingTechnicalDetails;
+  entryTrigger: string;
+  exitRules: string[];
+  watchOuts: string[];
+  reasons: string[];
+}
+
+export interface SwingSectorOverview {
+  sector: string;
+  relativeStrengthScore: number;
+  momentum: 'ACCELERATING' | 'STEADY' | 'WEAKENING';
+  pickCount: number;
+  topPickSymbol?: string;
+}
+
+export interface SwingRadarSummaryDto {
+  asOfDate: string;
+  marketRegime: MarketRegime;
+  niftyStatus: {
+    close: number;
+    ema50: number;
+    changePct: number;
+    isAbove50Ema: boolean;
+    trend: 'STRONG_UPTREND' | 'UPTREND' | 'SIDEWAYS' | 'DOWNTREND';
+  };
+  recommendedStrategyFocus: 'VOLUME_BREAKOUT' | 'EMA_PULLBACK' | 'DEFENSIVE';
+  focusReason: string;
+  totalStocksScanned: number;
+  picksCount: number;
+  avgRiskReward: number;
+  avgWinProbability: number;
+  avgConfluenceScore: number;
+  sectorRankings: SwingSectorOverview[];
+  topPrimePicks: SwingTradingPickDto[];
+  picks: SwingTradingPickDto[];
+}
+

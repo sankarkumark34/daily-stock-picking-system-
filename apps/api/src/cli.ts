@@ -15,10 +15,6 @@ import { AppModule } from './app.module.js';
 import { DataService } from './data/data.service.js';
 import { DailyRunService } from './engine/daily-run.service.js';
 import { JobsService } from './engine/jobs.service.js';
-import { BacktestService } from './backtest/backtest.service.js';
-import { BacktestRunEntity } from './database/entities/backtest-run.entity.js';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -28,8 +24,8 @@ async function main() {
   const data = app.get(DataService);
   const daily = app.get(DailyRunService);
   const jobs = app.get(JobsService);
-  const backtest = app.get(BacktestService);
   const flag = (name: string) => args.includes(name);
+
   const opt = (name: string) => {
     const i = args.indexOf(name);
     return i >= 0 ? args[i + 1] : undefined;
@@ -94,62 +90,8 @@ async function main() {
         console.log(`${n} predictions updated.`);
         break;
       }
-      case 'backtest': {
-        const [from, to] = positional;
-        if (!from || !to) throw new Error('usage: backtest FROM TO [--no-wf] [--opt] [--label name]');
-        const run = await backtest.start({ fromDate: from, toDate: to, walkForward: !flag('--no-wf'), optimizeWeights: flag('--opt'), label: opt('--label') });
-        const repo = app.get<Repository<BacktestRunEntity>>(getRepositoryToken(BacktestRunEntity));
-        let status = 'RUNNING';
-        while (status === 'RUNNING' || status === 'QUEUED') {
-          await sleep(1500);
-          const r = await repo.findOne({ where: { id: run.id }, select: { status: true, progress: true } });
-          status = r?.status ?? 'FAILED';
-          process.stdout.write(`\rbacktest #${run.id} ${status} ${r?.progress ?? 0}%   `);
-        }
-        const res = await backtest.get(run.id);
-        console.log('\n');
-        if (res.error) console.error(res.error);
-        if (res.metrics) {
-          const m = res.metrics;
-          console.table({
-            trades: m.trades,
-            winRate: m.winRate,
-            stopHitRate: m.stopHitRate,
-            expiredRate: m.expiredRate,
-            directionalAccuracy: m.directionalAccuracy,
-            expectancyPct: m.expectancyPct,
-            profitFactor: m.profitFactor,
-            avgWinPct: m.avgWinPct,
-            avgLossPct: m.avgLossPct,
-            maxDrawdownPct: m.maxDrawdownPct,
-            sharpe: m.sharpe,
-            sortino: m.sortino,
-            cagrPct: m.cagrPct,
-            avgDailyHitRate: m.avgDailyHitRate,
-            daysWith6PlusOf10: m.daysWith6PlusOf10,
-          });
-          console.log('By regime:');
-          console.table(res.byRegime);
-          console.log('By setup:');
-          console.table(res.bySetup);
-          if (res.walkForward.length) {
-            console.log('Walk-forward (test windows):');
-            console.table(
-              res.walkForward.map((w) => ({
-                split: w.label,
-                testTrades: w.test.metrics?.trades ?? 0,
-                testWinRate: w.test.metrics?.winRate ?? null,
-                testExpectancy: w.test.metrics?.expectancyPct ?? null,
-                testPF: w.test.metrics?.profitFactor ?? null,
-              })),
-            );
-          }
-          console.log(`\nVERDICT: ${res.verdict}`);
-        }
-        break;
-      }
       default:
-        console.log('commands: universe | ingest DATE | backfill FROM TO | run [DATE] | evaluate | backtest FROM TO [--no-wf] [--opt] [--label name]');
+        console.log('commands: universe | ingest DATE | backfill FROM TO | run [DATE] | evaluate');
     }
   } finally {
     await app.close();

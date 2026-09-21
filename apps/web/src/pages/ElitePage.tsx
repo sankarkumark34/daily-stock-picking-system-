@@ -16,6 +16,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react'
+
 import { Badge, Card, EmptyState, FactorBar, Skeleton, fadeUp, staggerList } from '../components/ui'
 import { useMarketOverview, usePicks } from '../lib/api'
 import { dateLong, fmt, inr, regimeLabel, regimeTone, setupLabel, setupTone } from '../lib/format'

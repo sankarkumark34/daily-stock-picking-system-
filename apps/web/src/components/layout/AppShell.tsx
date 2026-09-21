@@ -1,22 +1,13 @@
 import clsx from 'clsx'
 import {
   Activity,
-  BarChart3,
   Bell,
   CheckCircle2,
-  Clock,
-  Database,
-  FlaskConical,
+  Compass,
   Info,
-  LayoutDashboard,
-  ListOrdered,
   Menu,
-  Rocket,
   Settings,
-  Sparkles,
-  Star,
   X,
-  Zap,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
@@ -33,16 +24,7 @@ import {
 } from '../ui'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/premarket', label: 'Pre-Market (9:15)', icon: Clock },
-  { to: '/circuit', label: 'Circuit Radar', icon: Zap },
-  { to: '/elite', label: 'Elite Pick', icon: Star, highlight: true },
-  { to: '/picks', label: 'Daily Picks', icon: ListOrdered },
-  { to: '/analyst', label: 'Stock Analyst', icon: Sparkles },
-  { to: '/performance', label: 'Performance', icon: BarChart3 },
-  { to: '/backtest', label: 'Backtest', icon: FlaskConical },
-  { to: '/ipos', label: 'Upcoming IPOs', icon: Rocket },
-  { to: '/data', label: 'Data', icon: Database },
+  { to: '/', label: 'Swing Radar (10D)', icon: Compass, end: true },
 ]
 
 export function AppShell() {
@@ -92,15 +74,12 @@ export function AppShell() {
 
         {/* Settings Affordance & Live Data Status Footer (§6.1 items 3 & 4) */}
         <div className="border-t border-[#DFE6F1] p-3 space-y-2">
-          <NavLink
-            to="/data"
-            className="flex items-center justify-between rounded-lg px-2 py-1.5 text-xs text-ink-500 hover:bg-[#F0EBFF] hover:text-[#7046E8] transition-colors"
-          >
+          <div className="flex items-center justify-between rounded-lg px-2 py-1.5 text-xs text-ink-500">
             <span className="flex items-center gap-2">
-              <Settings size={14} /> System Settings
+              <Settings size={14} /> Swing Radar System
             </span>
-            <span className="text-[10px] font-bold text-ink-400">v0.1.0</span>
-          </NavLink>
+            <span className="text-[10px] font-bold text-ink-400">v1.0.0</span>
+          </div>
           <DataFooter />
         </div>
       </aside>
@@ -282,10 +261,10 @@ function TopBar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
               </div>
               <div className="p-3 hover:bg-[#F8FAFF] transition-colors">
                 <p className="font-semibold text-ink-900 flex items-center gap-1.5">
-                  <Info size={13} className="text-[#7046E8]" /> Blockbuster IPO Listing Radar
+                  <Info size={13} className="text-[#7046E8]" /> 10-Day Swing Radar Active
                 </p>
                 <p className="mt-0.5 text-[11px] text-ink-500">
-                  Live IPO radar tracking active issues, demand tiers & expected listing debuts.
+                  Scanning 2,400+ liquid NSE cash stocks with strict 1:2.0+ R:R and ATR risk buffers.
                 </p>
               </div>
               <div className="p-3 hover:bg-[#F8FAFF] transition-colors">

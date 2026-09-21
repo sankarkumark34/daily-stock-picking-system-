@@ -16,6 +16,7 @@ import type {
   StockDetailDto,
   IpoDto,
   PreMarketWatchlistDto,
+  SwingRadarSummaryDto,
 } from '@nse/shared'
 
 export class ApiError extends Error {
@@ -283,6 +284,21 @@ export const usePreMarketWatchlist = (date?: string) =>
   useQuery({
     queryKey: ['premarket', 'watchlist', date ?? 'latest'],
     queryFn: () => api.get<PreMarketWatchlistDto>(`/premarket/watchlist${qs({ date })}`),
+    refetchInterval: 60_000,
+  })
+
+export const useSwingRadar = (params?: {
+  date?: string
+  strategy?: string
+  minRR?: number
+  sector?: string
+  capital?: number
+  riskPct?: number
+  search?: string
+}) =>
+  useQuery({
+    queryKey: ['swing', 'radar', params],
+    queryFn: () => api.get<SwingRadarSummaryDto>(`/swing/radar${qs(params ?? {})}`),
     refetchInterval: 60_000,
   })
 

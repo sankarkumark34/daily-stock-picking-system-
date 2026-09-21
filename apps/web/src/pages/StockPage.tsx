@@ -5,7 +5,6 @@ import { CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer,
 import { Badge, Callout, Card, KV, Skeleton, StatTile, Term, staggerList } from '../components/ui'
 import { useStock } from '../lib/api'
 import { compact, dateLong, dateShort, fmt, inr, pct } from '../lib/format'
-import { PicksTable } from './PicksPage'
 
 export function StockPage() {
   const { symbol } = useParams()
@@ -106,14 +105,6 @@ export function StockPage() {
           </div>
         </Card>
       </div>
-
-      <Card className="mt-5" title="Pick history for this stock" padded={false}>
-        {data.history.length ? (
-          <PicksTable picks={data.history} />
-        ) : (
-          <p className="p-5 text-sm text-ink-500">This stock has not appeared in the live picks yet.</p>
-        )}
-      </Card>
     </>
   )
 }
